@@ -3,7 +3,7 @@ import { GameEngine } from '../../engine/GameEngine';
 import { GameCanvas } from '../../renderer/GameCanvas';
 import { Toolbox } from '../components/Toolbox';
 import type { ComponentType } from '../../engine/types';
-import type { InputHandler } from '../../renderer/InputHandler';
+import { InputHandler } from '../../renderer/InputHandler';
 
 interface GameScreenProps {
   levelId?: string;
@@ -83,7 +83,7 @@ export function GameScreen({ budgetLimit = 500, onExit }: GameScreenProps) {
           disabled={state.simulation.status !== 'building'}
         />
         <div style={styles.canvasWrapper}>
-          <GameCanvas engine={engine} onStateChange={triggerUpdate} />
+          <GameCanvas engine={engine} onStateChange={triggerUpdate} inputHandlerRef={inputRef} />
         </div>
       </div>
     </div>

@@ -54,14 +54,18 @@ export interface Connection {
 }
 
 export type ParticleStatus = 'flowing' | 'queued' | 'dropped';
+export type ParticleDirection = 'request' | 'response';
 
 export interface Particle {
   id: string;
   connectionId: string;
-  position: number;        // 0-1 along the connection path
+  position: number;        // 0-1 along the connection path (always from→to)
   speed: number;
+  direction: ParticleDirection; // request flows from→to, response flows to→from
   stuckInComponent?: string;
   status: ParticleStatus;
+  sourceComponentId: string;   // tracks origin for latency measurement
+  createdAt: number;           // simulation time when spawned (for latency calc)
 }
 
 export interface Budget {
@@ -174,7 +178,6 @@ export interface LevelDefinition {
 export interface PortConfig {
   side: PortSide;
   count: number;
-  direction: 'in' | 'out' | 'both';
 }
 
 export interface ComponentDefinition {
