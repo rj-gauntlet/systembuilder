@@ -3,538 +3,519 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SystemBuilder — Dashboard</title>
+<title>SystemBuilder — Project Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Inter', sans-serif; background: #0f1117; color: #e8eaed; min-height: 100vh; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',system-ui,sans-serif;background:#0f1117;color:#e8eaed;min-height:100vh}
+a{color:#60a5fa;text-decoration:none}
+a:hover{text-decoration:underline}
 
-  .header { padding: 32px 40px 24px; border-bottom: 1px solid #2a2d3a; }
-  .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
-  .header-left h1 { font-size: 28px; font-weight: 800; margin-bottom: 6px; }
-  .header-left p { color: #9ca3af; font-size: 14px; max-width: 600px; line-height: 1.5; }
-  .header-right { display: flex; align-items: center; gap: 24px; }
+.header{padding:28px 32px 20px;border-bottom:1px solid #2a2d3a}
+.header-top{display:flex;align-items:center;gap:20px;margin-bottom:16px;flex-wrap:wrap}
+.project-name{font-size:28px;font-weight:800;background:linear-gradient(135deg,#3b82f6,#8b5cf6,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.project-desc{font-size:14px;color:#9ca3af;max-width:600px;line-height:1.5}
+.completion-ring{width:80px;height:80px;position:relative;margin-left:auto}
+.completion-ring svg{transform:rotate(-90deg)}
+.completion-ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#34d399}
 
-  .completion-ring { position: relative; width: 80px; height: 80px; }
-  .completion-ring svg { transform: rotate(-90deg); }
-  .completion-ring .bg { stroke: #2a2d3a; }
-  .completion-ring .fg { stroke: #34d399; stroke-linecap: round; transition: stroke-dashoffset 0.6s ease; }
-  .completion-pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; }
+.status-bar{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.status-item{display:flex;align-items:center;gap:8px;padding:6px 14px;background:#1a1d27;border:1px solid #2a2d3a;border-radius:8px;font-size:12px}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.status-dot.green{background:#34d399;box-shadow:0 0 6px #34d39966}
+.status-dot.amber{background:#fbbf24;box-shadow:0 0 6px #fbbf2466}
+.status-dot.red{background:#f87171;box-shadow:0 0 6px #f8717166}
+.status-dot.gray{background:#4b5563}
+.status-dot.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.start-btn{padding:6px 14px;background:#1a1d27;border:1px solid #2a2d3a;border-radius:8px;color:#e8eaed;font-size:12px;font-family:monospace;cursor:pointer;display:flex;align-items:center;gap:6px}
+.start-btn:hover{border-color:#60a5fa}
+.start-btn.running{border-color:#34d399;color:#34d399;cursor:default}
 
-  .status-row { display: flex; gap: 20px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
-  .status-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9ca3af; }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .status-dot.gray { background: #6b7280; }
-  .status-dot.green { background: #34d399; animation: pulse 2s infinite; }
-  .status-dot.red { background: #f87171; }
-  .status-dot.amber { background: #fbbf24; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+.pipeline{display:flex;align-items:center;gap:0;padding:20px 32px;border-bottom:1px solid #2a2d3a;overflow-x:auto}
+.pipe-stage{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;white-space:nowrap}
+.pipe-stage.done{background:#052e16;color:#34d399;border:1px solid #166534}
+.pipe-stage.current{background:#422006;color:#fbbf24;border:1px solid #854d0e}
+.pipe-stage.future{background:#1a1d27;color:#4b5563;border:1px solid #2a2d3a}
+.pipe-arrow{color:#4b5563;margin:0 4px;font-size:16px}
+.pipe-icon{font-size:14px}
 
-  .start-btn { background: #1a1d27; border: 1px solid #2a2d3a; color: #e8eaed; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-family: 'Inter', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: border-color 0.2s; }
-  .start-btn:hover { border-color: #60a5fa; }
-  .start-btn .icon { font-size: 14px; }
+.stats-row{display:flex;gap:16px;padding:16px 32px;border-bottom:1px solid #2a2d3a;flex-wrap:wrap}
+.stat-card{background:#1a1d27;border:1px solid #2a2d3a;border-radius:10px;padding:14px 18px;flex:1;min-width:120px}
+.stat-label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.stat-value{font-size:22px;font-weight:800;margin-top:4px}
 
-  .pipeline-bar { display: flex; align-items: center; padding: 20px 40px; border-bottom: 1px solid #2a2d3a; gap: 0; overflow-x: auto; }
-  .pipeline-stage { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; white-space: nowrap; }
-  .pipeline-stage.done { background: rgba(52, 211, 153, 0.1); color: #34d399; }
-  .pipeline-stage.current { background: rgba(251, 191, 36, 0.1); color: #fbbf24; }
-  .pipeline-stage.future { color: #6b7280; }
-  .pipeline-arrow { color: #2a2d3a; margin: 0 4px; font-size: 18px; flex-shrink: 0; }
+.tabs{display:flex;gap:0;padding:0 32px;border-bottom:1px solid #2a2d3a}
+.tab{padding:12px 20px;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s}
+.tab:hover{color:#9ca3af}
+.tab.active{color:#60a5fa;border-bottom-color:#60a5fa}
+.tab .badge{background:#f87171;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:6px;font-weight:700}
 
-  .stats-bar { display: flex; gap: 32px; padding: 16px 40px; border-bottom: 1px solid #2a2d3a; flex-wrap: wrap; }
-  .stat { display: flex; flex-direction: column; }
-  .stat-value { font-size: 20px; font-weight: 700; }
-  .stat-label { font-size: 12px; color: #6b7280; margin-top: 2px; }
+.tab-content{padding:24px 32px;display:none}
+.tab-content.active{display:block}
 
-  .tabs { display: flex; gap: 0; padding: 0 40px; border-bottom: 1px solid #2a2d3a; }
-  .tab { padding: 14px 20px; font-size: 14px; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; position: relative; }
-  .tab:hover { color: #9ca3af; }
-  .tab.active { color: #e8eaed; border-bottom-color: #60a5fa; }
-  .tab .badge { background: #60a5fa; color: #0f1117; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; margin-left: 6px; }
+.phase-card{background:#1a1d27;border:1px solid #2a2d3a;border-radius:12px;padding:20px;margin-bottom:16px}
+.phase-header{display:flex;align-items:center;gap:12px;margin-bottom:12px;cursor:pointer}
+.phase-title{font-size:16px;font-weight:700;flex:1}
+.phase-status{font-size:12px;font-weight:600;padding:3px 10px;border-radius:6px}
+.phase-status.done{background:#052e16;color:#34d399}
+.phase-status.in-progress{background:#422006;color:#fbbf24}
+.phase-status.not-started{background:#1a1d27;color:#4b5563;border:1px solid #2a2d3a}
+.phase-bar{height:6px;background:#2a2d3a;border-radius:3px;margin-bottom:12px;overflow:hidden}
+.phase-bar-fill{height:100%;border-radius:3px;transition:width .5s}
+.phase-bar-fill.green{background:linear-gradient(90deg,#34d399,#10b981)}
+.phase-bar-fill.amber{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+.phase-tasks{display:none;margin-top:8px}
+.phase-tasks.open{display:block}
+.task-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;color:#9ca3af;border-bottom:1px solid #1f2230}
+.task-item:last-child{border-bottom:none}
+.task-check{font-size:14px}
+.task-check.done{color:#34d399}
+.task-check.pending{color:#4b5563}
+.chip{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;margin-left:auto}
+.chip.deviation{background:#3b0764;color:#a78bfa}
+.phase-dates{font-size:11px;color:#6b7280;margin-top:8px}
 
-  .tab-content { display: none; padding: 28px 40px; }
-  .tab-content.active { display: block; }
+.req-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.req-grid{grid-template-columns:1fr}}
+.req-group{background:#1a1d27;border:1px solid #2a2d3a;border-radius:12px;padding:18px}
+.req-group-title{font-size:14px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.req-group-title .dot{width:10px;height:10px;border-radius:50%}
+.req-bar{height:4px;background:#2a2d3a;border-radius:2px;margin-bottom:12px;overflow:hidden}
+.req-bar-fill{height:100%;border-radius:2px}
+.req-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;color:#9ca3af}
+.req-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 
-  .card { background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
-  .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.artifact-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.artifact-card{background:#1a1d27;border:1px solid #2a2d3a;border-radius:10px;padding:16px;display:flex;align-items:center;gap:10px}
+.artifact-name{font-size:13px;font-weight:600}
+.artifact-status{font-size:11px;color:#6b7280}
 
-  .phase-card { margin-bottom: 16px; }
-  .phase-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-  .phase-title { font-size: 15px; font-weight: 600; }
-  .phase-meta { font-size: 12px; color: #6b7280; margin-bottom: 12px; }
-  .phase-status-chip { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .chip-not-started { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
-  .chip-done { background: rgba(52, 211, 153, 0.15); color: #34d399; }
-  .chip-in-progress { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
-
-  .progress-bar-track { height: 6px; background: #2a2d3a; border-radius: 3px; margin-bottom: 14px; overflow: hidden; }
-  .progress-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
-  .progress-bar-fill.green { background: #34d399; }
-  .progress-bar-fill.amber { background: #fbbf24; }
-  .progress-bar-fill.blue { background: #60a5fa; }
-
-  .task-list { list-style: none; }
-  .task-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; color: #9ca3af; }
-  .task-icon { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
-  .task-icon.done { background: rgba(52, 211, 153, 0.15); color: #34d399; }
-  .task-icon.pending { background: rgba(107, 114, 128, 0.15); color: #6b7280; }
-
-  .req-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-  .req-card { padding: 20px; }
-  .req-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-  .req-count { font-size: 12px; color: #6b7280; margin-bottom: 12px; }
-  .req-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; color: #9ca3af; }
-  .req-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .req-dot.must { background: #f87171; }
-  .req-dot.should { background: #fbbf24; }
-  .req-dot.could { background: #60a5fa; }
-  .req-dot.wont { background: #6b7280; }
-
-  .artifact-card { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
-  .artifact-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .artifact-dot.exists { background: #34d399; }
-  .artifact-dot.missing { background: #6b7280; }
-  .artifact-info h4 { font-size: 14px; font-weight: 500; }
-  .artifact-info p { font-size: 12px; color: #6b7280; margin-top: 2px; }
-
-  .activity-feed { display: flex; flex-direction: column; gap: 0; }
-  .activity-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; }
-  .activity-item:last-child { border-bottom: none; }
-  .activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-  .activity-dot.blue { background: #60a5fa; }
-  .activity-dot.green { background: #34d399; }
-  .activity-dot.purple { background: #a78bfa; }
-  .activity-text { font-size: 13px; color: #9ca3af; line-height: 1.5; }
-  .activity-text strong { color: #e8eaed; font-weight: 500; }
-  .activity-time { font-size: 11px; color: #6b7280; margin-top: 2px; }
-
-  .tech-stack { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; }
-  .tech-item { background: #1a1d27; border: 1px solid #2a2d3a; border-radius: 8px; padding: 12px 16px; }
-  .tech-item .layer { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-  .tech-item .tech { font-size: 14px; font-weight: 600; color: #e8eaed; }
+.activity-feed{max-width:700px}
+.activity-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #1f2230}
+.activity-dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.activity-text{font-size:13px;color:#9ca3af;line-height:1.5}
+.activity-text strong{color:#e8eaed;font-weight:600}
+.activity-time{font-size:11px;color:#4b5563;margin-top:2px}
 </style>
 </head>
 <body>
 
-<!-- Header -->
+<!-- HEADER -->
 <div class="header">
   <div class="header-top">
-    <div class="header-left">
-      <h1>SystemBuilder</h1>
-      <p>Gamified, interactive system design learning platform. Build, simulate, and stress-test distributed architectures — learn by doing, not reading.</p>
+    <div>
+      <div class="project-name">SystemBuilder</div>
+      <div class="project-desc">Gamified, interactive system design learning platform — SimCity for distributed systems. Players build architectures, watch animated traffic flow, and survive stress events.</div>
     </div>
-    <div class="header-right">
-      <div class="completion-ring">
-        <svg width="80" height="80" viewBox="0 0 80 80">
-          <circle class="bg" cx="40" cy="40" r="34" fill="none" stroke-width="6"/>
-          <circle class="fg" cx="40" cy="40" r="34" fill="none" stroke-width="6"
-            stroke-dasharray="213.6" stroke-dashoffset="213.6"/>
-        </svg>
-        <div class="completion-pct">0%</div>
-      </div>
+    <div class="completion-ring">
+      <svg width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#2a2d3a" stroke-width="6"/>
+        <circle cx="40" cy="40" r="34" fill="none" stroke="#34d399" stroke-width="6"
+          stroke-dasharray="213.6" stroke-dashoffset="85.4" stroke-linecap="round"/>
+      </svg>
+      <div class="pct">60%</div>
     </div>
   </div>
-  <div class="status-row">
+  <div class="status-bar">
     <div class="status-item">
-      <span class="status-dot gray" id="local-status-dot"></span>
-      <span>Local: <span id="local-url-display">Not configured</span></span>
+      <span class="status-dot gray pulse" id="local-dot"></span>
+      <span>Local: <a href="http://localhost:5174" id="local-url" target="_blank">http://localhost:5174</a></span>
     </div>
     <div class="status-item">
-      <span class="status-dot gray" id="prod-status-dot"></span>
-      <span>Production: <span id="prod-url-display">Not deployed</span></span>
+      <span class="status-dot gray"></span>
+      <span>Production: Not deployed</span>
     </div>
-    <button class="start-btn" id="start-cmd-btn" onclick="copyStartCmd()" title="Copy start command">
-      <span class="icon">&#9654;</span> npm run dev
+    <button class="start-btn" id="start-btn" onclick="copyStart()">
+      <span>📋</span> <code>npm run dev</code>
     </button>
   </div>
 </div>
 
-<!-- Pipeline Bar -->
-<div class="pipeline-bar">
-  <div class="pipeline-stage done">
-    <span>&#10003;</span> PRD
+<!-- PIPELINE -->
+<div class="pipeline">
+  <div class="pipe-stage done"><span class="pipe-icon">✓</span> PRD</div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-stage done"><span class="pipe-icon">✓</span> Presearch</div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-stage current"><span class="pipe-icon">●</span> Implement</div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-stage future">Review</div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-stage future">Test/QA</div>
+  <span class="pipe-arrow">→</span>
+  <div class="pipe-stage future">Ship</div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-label">Completion</div>
+    <div class="stat-value" style="color:#34d399">60%</div>
   </div>
-  <span class="pipeline-arrow">&#8594;</span>
-  <div class="pipeline-stage done">
-    <span>&#10003;</span> Presearch
+  <div class="stat-card">
+    <div class="stat-label">Tasks Done</div>
+    <div class="stat-value">31 <span style="font-size:14px;color:#6b7280">/ 51</span></div>
   </div>
-  <span class="pipeline-arrow">&#8594;</span>
-  <div class="pipeline-stage current">
-    <span>&#9679;</span> Implement
+  <div class="stat-card">
+    <div class="stat-label">Phases Done</div>
+    <div class="stat-value">3 <span style="font-size:14px;color:#6b7280">/ 6</span></div>
   </div>
-  <span class="pipeline-arrow">&#8594;</span>
-  <div class="pipeline-stage future">
-    Review
+  <div class="stat-card">
+    <div class="stat-label">Tests</div>
+    <div class="stat-value" style="color:#34d399">34 passing</div>
   </div>
-  <span class="pipeline-arrow">&#8594;</span>
-  <div class="pipeline-stage future">
-    Test / QA
+  <div class="stat-card">
+    <div class="stat-label">Timeline</div>
+    <div class="stat-value">Apr 5–18</div>
   </div>
-  <span class="pipeline-arrow">&#8594;</span>
-  <div class="pipeline-stage future">
-    Ship
+  <div class="stat-card">
+    <div class="stat-label">Deviations</div>
+    <div class="stat-value" style="color:#a78bfa">6</div>
   </div>
 </div>
 
-<!-- Stats Bar -->
-<div class="stats-bar">
-  <div class="stat">
-    <span class="stat-value">0%</span>
-    <span class="stat-label">Completion</span>
-  </div>
-  <div class="stat">
-    <span class="stat-value">53</span>
-    <span class="stat-label">Total Tasks</span>
-  </div>
-  <div class="stat">
-    <span class="stat-value">53</span>
-    <span class="stat-label">Remaining</span>
-  </div>
-  <div class="stat">
-    <span class="stat-value">Apr 5 &#8594; Apr 18</span>
-    <span class="stat-label">Timeline</span>
-  </div>
-  <div class="stat">
-    <span class="stat-value">14 days</span>
-    <span class="stat-label">Duration</span>
-  </div>
-</div>
-
-<!-- Tabs -->
+<!-- TABS -->
 <div class="tabs">
-  <div class="tab active" onclick="switchTab(this, 'phases')">Phases</div>
-  <div class="tab" onclick="switchTab(this, 'requirements')">Requirements</div>
-  <div class="tab" onclick="switchTab(this, 'artifacts')">Artifacts</div>
-  <div class="tab" onclick="switchTab(this, 'activity')">Activity <span class="badge">2</span></div>
+  <div class="tab active" onclick="showTab('phases')">Phases</div>
+  <div class="tab" onclick="showTab('requirements')">Requirements</div>
+  <div class="tab" onclick="showTab('artifacts')">Artifacts</div>
+  <div class="tab" onclick="showTab('activity')">Activity <span class="badge">7</span></div>
 </div>
 
-<!-- Tab: Phases -->
+<!-- TAB: PHASES -->
 <div class="tab-content active" id="tab-phases">
 
   <!-- Phase 1 -->
-  <div class="card phase-card">
-    <div class="phase-header">
+  <div class="phase-card">
+    <div class="phase-header" onclick="togglePhase(this)">
       <span class="phase-title">Phase 1: Foundation</span>
-      <span class="phase-status-chip chip-not-started">Not Started</span>
+      <span class="phase-status done">Complete</span>
+      <span style="font-size:12px;color:#6b7280">8/8</span>
     </div>
-    <div class="phase-meta">Days 1-2 (Apr 5-6) &bull; Goal: Project scaffolding, game engine core, basic canvas rendering</div>
-    <div class="progress-bar-track"><div class="progress-bar-fill green" style="width: 0%;"></div></div>
-    <ul class="task-list">
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Project scaffolding (React 19 + Vite + TypeScript + PixiJS v8 + @pixi/react)</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> GameState interface and all core type definitions</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> GameEngine class with addComponent(), removeComponent(), connect(), getState()</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Component data models — 8 types with costs, throughput limits, behavior rules</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Basic PixiJS canvas rendering — display a component on a snap-to-grid canvas</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Grid system with snap-to-grid placement</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Port system — defined input/output anchor points per component type</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> localStorage scaffolding — ProgressStore with save/load skeleton</li>
-    </ul>
+    <div class="phase-bar"><div class="phase-bar-fill green" style="width:100%"></div></div>
+    <div class="phase-tasks">
+      <div class="task-item"><span class="task-check done">✓</span> Project scaffolding (React 19 + Vite + TypeScript + PixiJS v8)</div>
+      <div class="task-item"><span class="task-check done">✓</span> GameState interface and all core type definitions</div>
+      <div class="task-item"><span class="task-check done">✓</span> GameEngine class with addComponent, removeComponent, connect, getState</div>
+      <div class="task-item"><span class="task-check done">✓</span> Component data models — 8 types with costs, throughput, behavior rules</div>
+      <div class="task-item"><span class="task-check done">✓</span> Basic PixiJS canvas rendering — snap-to-grid</div>
+      <div class="task-item"><span class="task-check done">✓</span> Grid system with snap-to-grid placement</div>
+      <div class="task-item"><span class="task-check done">✓</span> Port system — input/output anchor points per component type</div>
+      <div class="task-item"><span class="task-check done">✓</span> localStorage ProgressStore with schema versioning</div>
+    </div>
+    <div class="phase-dates">Days 1–2 (Apr 5–6) · Completed 2026-04-04</div>
   </div>
 
   <!-- Phase 2 -->
-  <div class="card phase-card">
-    <div class="phase-header">
-      <span class="phase-title">Phase 2: Wiring &amp; Simulation</span>
-      <span class="phase-status-chip chip-not-started">Not Started</span>
+  <div class="phase-card">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-title">Phase 2: Wiring & Simulation</span>
+      <span class="phase-status done">Complete</span>
+      <span style="font-size:12px;color:#6b7280">12/12</span>
     </div>
-    <div class="phase-meta">Days 3-5 (Apr 7-9) &bull; Goal: Connection drawing, traffic flow animation, core simulation loop</div>
-    <div class="progress-bar-track"><div class="progress-bar-fill green" style="width: 0%;"></div></div>
-    <ul class="task-list">
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Connection drawing between component ports</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Auto-routing algorithm for clean orthogonal wire paths</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Wire re-routing when components are moved</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Simulation tick loop in GameEngine (SimulationLoop.ts)</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Component behavior implementations — each type processes traffic differently</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Particle system — requests flow along connections at constant speed</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Particles queue/stack inside overloaded components</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Dropped request animation when components exceed capacity</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Component stat overlays (req/s, latency, hit rate, queue depth)</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Component health visualization (green &rarr; yellow &rarr; red)</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Budget system — monthly cost display, deducted on component placement</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Budget HUD element in the canvas</li>
-    </ul>
+    <div class="phase-bar"><div class="phase-bar-fill green" style="width:100%"></div></div>
+    <div class="phase-tasks">
+      <div class="task-item"><span class="task-check done">✓</span> Connection drawing between component ports</div>
+      <div class="task-item"><span class="task-check done">✓</span> Auto-routing orthogonal wire paths</div>
+      <div class="task-item"><span class="task-check done">✓</span> Wire re-routing when components moved</div>
+      <div class="task-item"><span class="task-check done">✓</span> Simulation tick loop (SimulationLoop.ts)</div>
+      <div class="task-item"><span class="task-check done">✓</span> Component behavior implementations — all 8 types <span class="chip deviation">deviation</span></div>
+      <div class="task-item"><span class="task-check done">✓</span> Particle system — bidirectional request/response flow <span class="chip deviation">deviation</span></div>
+      <div class="task-item"><span class="task-check done">✓</span> Particles queue inside overloaded components</div>
+      <div class="task-item"><span class="task-check done">✓</span> Dropped request animation</div>
+      <div class="task-item"><span class="task-check done">✓</span> Component stat overlays (req/s, latency, hit rate, queue depth)</div>
+      <div class="task-item"><span class="task-check done">✓</span> Component health visualization (green → yellow → red)</div>
+      <div class="task-item"><span class="task-check done">✓</span> Budget system with monthly cost tracking</div>
+      <div class="task-item"><span class="task-check done">✓</span> Budget HUD in the canvas</div>
+    </div>
+    <div class="phase-dates">Days 3–5 (Apr 7–9) · Completed 2026-04-04 · 4 deviations (user-approved)</div>
   </div>
 
   <!-- Phase 3 -->
-  <div class="card phase-card">
-    <div class="phase-header">
-      <span class="phase-title">Phase 3: Events &amp; Levels</span>
-      <span class="phase-status-chip chip-not-started">Not Started</span>
+  <div class="phase-card">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-title">Phase 3: Events & Levels</span>
+      <span class="phase-status done">Complete</span>
+      <span style="font-size:12px;color:#6b7280">11/11</span>
     </div>
-    <div class="phase-meta">Days 6-8 (Apr 10-12) &bull; Goal: Dynamic events, level structure, scoring, full game loop</div>
-    <div class="progress-bar-track"><div class="progress-bar-fill green" style="width: 0%;"></div></div>
-    <ul class="task-list">
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Event system — EventSystem.ts with scripted timeline + random pool</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Event notification banners in the HUD</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Event effects on simulation (traffic multiplier, component failure, request flood)</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> 2-3 MVP level definitions with briefings, objectives, events, benchmarks</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Level flow: Briefing &rarr; Build &rarr; Go Live &rarr; Events &rarr; Debrief</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Briefing screen with system description, objectives, budget</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> 3-star scoring engine — compare player metrics to optimal benchmark</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Debrief screen with score breakdown, star rating, per-metric analysis</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Level select screen with tier grouping</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Star-gated progression — total accumulation + min 1 star per level</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Progress persistence — save stars, completion, unlocks to localStorage</li>
-    </ul>
+    <div class="phase-bar"><div class="phase-bar-fill green" style="width:100%"></div></div>
+    <div class="phase-tasks">
+      <div class="task-item"><span class="task-check done">✓</span> EventSystem with scripted timeline + random pool</div>
+      <div class="task-item"><span class="task-check done">✓</span> Event notification banners in HUD</div>
+      <div class="task-item"><span class="task-check done">✓</span> Event effects (traffic multiply, disable component, latency, flood)</div>
+      <div class="task-item"><span class="task-check done">✓</span> 3 MVP levels — URL Shortener, Paste Bin, Chat App</div>
+      <div class="task-item"><span class="task-check done">✓</span> Level flow: Briefing → Build → Go Live → Events → Debrief</div>
+      <div class="task-item"><span class="task-check done">✓</span> Briefing screen with objectives, budget, traffic</div>
+      <div class="task-item"><span class="task-check done">✓</span> 3-star scoring engine vs optimal benchmark</div>
+      <div class="task-item"><span class="task-check done">✓</span> Debrief screen with score breakdown and star rating</div>
+      <div class="task-item"><span class="task-check done">✓</span> Level select with tier grouping and lock indicators</div>
+      <div class="task-item"><span class="task-check done">✓</span> Star-gated tier progression</div>
+      <div class="task-item"><span class="task-check done">✓</span> Progress persistence to localStorage</div>
+    </div>
+    <div class="phase-dates">Days 6–8 (Apr 10–12) · Completed 2026-04-05 · 2 deviations</div>
   </div>
 
   <!-- Phase 4 -->
-  <div class="card phase-card">
-    <div class="phase-header">
-      <span class="phase-title">Phase 4: AI &amp; Hints</span>
-      <span class="phase-status-chip chip-not-started">Not Started</span>
+  <div class="phase-card">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-title">Phase 4: AI & Hints</span>
+      <span class="phase-status not-started">Not Started</span>
+      <span style="font-size:12px;color:#6b7280">0/11</span>
     </div>
-    <div class="phase-meta">Days 9-10 (Apr 13-14) &bull; Goal: Chat assistant, algorithmic hint system, hint-to-chat bridge</div>
-    <div class="progress-bar-track"><div class="progress-bar-fill green" style="width: 0%;"></div></div>
-    <ul class="task-list">
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> AIProvider interface + OpenAIProvider implementation</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Cloudflare Worker proxy for OpenAI API calls</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Game state serializer — compact JSON snapshot for AI context</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> System prompt for chat assistant</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Chat panel UI (React) — message history, input, send button</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Hint rules engine — HintEngine.ts with rule evaluation + random variant selection</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> 40-60 hint rules across all 8 component types (8 variants each)</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Hint toast notifications on canvas with "Ask about this" button</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> "Ask about this" flow — hint context pre-filled into chat panel</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> User API key fallback — settings page option</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Rate limiting — 50 chat messages per day per user</li>
-    </ul>
+    <div class="phase-bar"><div class="phase-bar-fill amber" style="width:0%"></div></div>
+    <div class="phase-tasks">
+      <div class="task-item"><span class="task-check pending">○</span> AIProvider interface + OpenAIProvider</div>
+      <div class="task-item"><span class="task-check pending">○</span> Cloudflare Worker proxy</div>
+      <div class="task-item"><span class="task-check pending">○</span> Game state serializer</div>
+      <div class="task-item"><span class="task-check pending">○</span> System prompt for chat assistant</div>
+      <div class="task-item"><span class="task-check pending">○</span> Chat panel UI</div>
+      <div class="task-item"><span class="task-check pending">○</span> Hint rules engine (40-60 rules × 8 variants)</div>
+      <div class="task-item"><span class="task-check pending">○</span> Hint toast notifications with "Ask about this"</div>
+      <div class="task-item"><span class="task-check pending">○</span> "Ask about this" → chat flow</div>
+      <div class="task-item"><span class="task-check pending">○</span> User API key fallback</div>
+      <div class="task-item"><span class="task-check pending">○</span> Rate limiting (50 msgs/day)</div>
+      <div class="task-item"><span class="task-check pending">○</span> Hint toast canvas notifications</div>
+    </div>
+    <div class="phase-dates">Days 9–10 (Apr 13–14)</div>
   </div>
 
   <!-- Phase 5 -->
-  <div class="card phase-card">
-    <div class="phase-header">
-      <span class="phase-title">Phase 5: Progression &amp; Polish</span>
-      <span class="phase-status-chip chip-not-started">Not Started</span>
+  <div class="phase-card">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-title">Phase 5: Progression & Polish</span>
+      <span class="phase-status not-started">Not Started</span>
+      <span style="font-size:12px;color:#6b7280">0/9</span>
     </div>
-    <div class="phase-meta">Days 11-12 (Apr 15-16) &bull; Goal: Complete game shell, tutorial, visual polish</div>
-    <div class="progress-bar-track"><div class="progress-bar-fill green" style="width: 0%;"></div></div>
-    <ul class="task-list">
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Main menu screen with game title, start button, settings</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Interactive tutorial for first level</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Toolbox sidebar — component list with icons, names, descriptions, costs</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Component drag interaction from toolbox to canvas</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Component icons/sprites for all 8 types</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Visual polish — animations, transitions, color palette, typography</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Sound effects (optional)</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Settings screen — hints toggle, sound toggle, API key input</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Responsive layout adjustments for common desktop resolutions</li>
-    </ul>
+    <div class="phase-bar"><div class="phase-bar-fill amber" style="width:0%"></div></div>
+    <div class="phase-tasks">
+      <div class="task-item"><span class="task-check pending">○</span> Main menu screen</div>
+      <div class="task-item"><span class="task-check pending">○</span> Interactive tutorial</div>
+      <div class="task-item"><span class="task-check pending">○</span> Toolbox sidebar enhancements</div>
+      <div class="task-item"><span class="task-check pending">○</span> Component drag from toolbox to canvas</div>
+      <div class="task-item"><span class="task-check pending">○</span> Component icons/sprites</div>
+      <div class="task-item"><span class="task-check pending">○</span> Visual polish — animations, transitions</div>
+      <div class="task-item"><span class="task-check pending">○</span> Sound effects (optional)</div>
+      <div class="task-item"><span class="task-check pending">○</span> Settings screen</div>
+      <div class="task-item"><span class="task-check pending">○</span> Responsive layout</div>
+    </div>
+    <div class="phase-dates">Days 11–12 (Apr 15–16)</div>
   </div>
 
   <!-- Phase 6 -->
-  <div class="card phase-card">
-    <div class="phase-header">
-      <span class="phase-title">Phase 6: Deploy &amp; Launch</span>
-      <span class="phase-status-chip chip-not-started">Not Started</span>
+  <div class="phase-card">
+    <div class="phase-header" onclick="togglePhase(this)">
+      <span class="phase-title">Phase 6: Deploy & Launch</span>
+      <span class="phase-status not-started">Not Started</span>
+      <span style="font-size:12px;color:#6b7280">0/11</span>
     </div>
-    <div class="phase-meta">Days 13-14 (Apr 17-18) &bull; Goal: Production deployment, playtesting, balancing, launch prep</div>
-    <div class="progress-bar-track"><div class="progress-bar-fill green" style="width: 0%;"></div></div>
-    <ul class="task-list">
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Cloudflare Pages deployment pipeline</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Cloudflare Worker deployment with API key</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Final playtesting — all levels, scoring, edge cases</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Component cost and throughput balancing</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Star threshold tuning</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Event timing adjustments</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Bug fixes from playtesting</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Landing page / intro with product description</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Open Graph meta tags for social media sharing</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> README.md</li>
-      <li class="task-item"><span class="task-icon pending">&#9675;</span> Performance profiling — verify 60fps</li>
-    </ul>
+    <div class="phase-bar"><div class="phase-bar-fill amber" style="width:0%"></div></div>
+    <div class="phase-tasks">
+      <div class="task-item"><span class="task-check pending">○</span> Cloudflare Pages deployment</div>
+      <div class="task-item"><span class="task-check pending">○</span> Cloudflare Worker deployment</div>
+      <div class="task-item"><span class="task-check pending">○</span> Playtesting all levels</div>
+      <div class="task-item"><span class="task-check pending">○</span> Component cost/throughput balancing</div>
+      <div class="task-item"><span class="task-check pending">○</span> Star threshold tuning</div>
+      <div class="task-item"><span class="task-check pending">○</span> Event timing adjustments</div>
+      <div class="task-item"><span class="task-check pending">○</span> Bug fixes from playtesting</div>
+      <div class="task-item"><span class="task-check pending">○</span> Landing page</div>
+      <div class="task-item"><span class="task-check pending">○</span> Open Graph meta tags</div>
+      <div class="task-item"><span class="task-check pending">○</span> README.md</div>
+      <div class="task-item"><span class="task-check pending">○</span> Performance profiling (60fps target)</div>
+    </div>
+    <div class="phase-dates">Days 13–14 (Apr 17–18)</div>
   </div>
-
 </div>
 
-<!-- Tab: Requirements -->
+<!-- TAB: REQUIREMENTS -->
 <div class="tab-content" id="tab-requirements">
   <div class="req-grid">
-    <div class="card req-card">
-      <h4 style="color: #f87171;">Must-have</h4>
-      <div class="req-count">9 requirements</div>
-      <div class="progress-bar-track"><div class="progress-bar-fill green" style="width: 0%;"></div></div>
-      <div class="req-item"><span class="req-dot must"></span> FR-01: Component Canvas</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-02: Animated Traffic Flow</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-03: Budget System</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-04: Dynamic Events</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-05: Component Behavior</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-06: Levels &amp; Scenarios</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-07: Scoring &amp; Feedback</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-10: Chat Assistant</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-11: Socratic Hint System</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-24: Interactive Tutorial</div>
-      <div class="req-item"><span class="req-dot must"></span> FR-25: Progress Saving</div>
+    <div class="req-group">
+      <div class="req-group-title"><span class="dot" style="background:#f87171"></span> Must-Have (9)</div>
+      <div class="req-bar"><div class="req-bar-fill" style="width:78%;background:#f87171"></div></div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> FR-01 Component Canvas</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> FR-02 Animated Traffic Flow</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> FR-03 Budget System</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> FR-04 Dynamic Events</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> FR-05 Component Behavior</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> FR-06 Levels & Scenarios</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> FR-07 Scoring & Feedback</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-10 Chat Assistant</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-11 Socratic Hint System</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-24 Interactive Tutorial</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> FR-25 Progress Saving</div>
     </div>
-    <div class="card req-card">
-      <h4 style="color: #fbbf24;">Should-have</h4>
-      <div class="req-count">8 requirements (deferred post-MVP)</div>
-      <div class="progress-bar-track"><div class="progress-bar-fill amber" style="width: 0%;"></div></div>
-      <div class="req-item"><span class="req-dot should"></span> FR-08: Progression System</div>
-      <div class="req-item"><span class="req-dot should"></span> FR-09: Easy / Hard Mode</div>
-      <div class="req-item"><span class="req-dot should"></span> FR-12: Architecture Reviewer</div>
-      <div class="req-item"><span class="req-dot should"></span> FR-13: Dynamic Event Narrator</div>
-      <div class="req-item"><span class="req-dot should"></span> FR-18: Schema Designer</div>
-      <div class="req-item"><span class="req-dot should"></span> FR-19: API Designer</div>
-      <div class="req-item"><span class="req-dot should"></span> FR-20: Database Type Selection</div>
+    <div class="req-group">
+      <div class="req-group-title"><span class="dot" style="background:#fbbf24"></span> Should-Have (6)</div>
+      <div class="req-bar"><div class="req-bar-fill" style="width:17%;background:#fbbf24"></div></div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> FR-08 Progression System</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-09 Easy / Hard Mode</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-12 Architecture Reviewer</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-13 Dynamic Event Narrator</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-18 Schema Designer</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-19 API Designer</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-20 Database Type Selection</div>
     </div>
-    <div class="card req-card">
-      <h4 style="color: #60a5fa;">Could-have</h4>
-      <div class="req-count">9 requirements (deferred post-MVP)</div>
-      <div class="progress-bar-track"><div class="progress-bar-fill blue" style="width: 0%;"></div></div>
-      <div class="req-item"><span class="req-dot could"></span> FR-14: Adaptive Difficulty</div>
-      <div class="req-item"><span class="req-dot could"></span> FR-15: "What If" Simulator</div>
-      <div class="req-item"><span class="req-dot could"></span> FR-16: Interview Prep Mode</div>
-      <div class="req-item"><span class="req-dot could"></span> FR-17: Custom Scenario Generator</div>
-      <div class="req-item"><span class="req-dot could"></span> FR-21: Live Query Visualization</div>
-      <div class="req-item"><span class="req-dot could"></span> FR-22: Schema Migration Events</div>
-      <div class="req-item"><span class="req-dot could"></span> FR-23: Branded/Sponsored Components</div>
-      <div class="req-item"><span class="req-dot could"></span> FR-26: Shareable Results</div>
+    <div class="req-group">
+      <div class="req-group-title"><span class="dot" style="background:#60a5fa"></span> Could-Have (7)</div>
+      <div class="req-bar"><div class="req-bar-fill" style="width:0%;background:#60a5fa"></div></div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-14 Adaptive Difficulty</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-15 "What If" Simulator</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-16 Interview Prep Mode</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-17 Custom Scenario Generator</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-21 Live Query Visualization</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-22 Schema Migration Events</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-23 Branded Components</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> FR-26 Shareable Results</div>
     </div>
-    <div class="card req-card">
-      <h4 style="color: #6b7280;">Won't-have (MVP)</h4>
-      <div class="req-count">1 requirement</div>
-      <div class="progress-bar-track"><div class="progress-bar-fill" style="width: 0%; background: #6b7280;"></div></div>
-      <div class="req-item"><span class="req-dot wont"></span> NFR-05: Mobile Responsiveness</div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top: 16px;">
-    <h3>Tech Stack</h3>
-    <div class="tech-stack">
-      <div class="tech-item"><div class="layer">Game Engine</div><div class="tech">Pure TypeScript</div></div>
-      <div class="tech-item"><div class="layer">Renderer</div><div class="tech">PixiJS v8</div></div>
-      <div class="tech-item"><div class="layer">Frontend</div><div class="tech">React 19 + Vite</div></div>
-      <div class="tech-item"><div class="layer">AI Provider</div><div class="tech">GPT-4o-mini</div></div>
-      <div class="tech-item"><div class="layer">Hosting</div><div class="tech">Cloudflare Pages</div></div>
-      <div class="tech-item"><div class="layer">API Proxy</div><div class="tech">Cloudflare Workers</div></div>
-      <div class="tech-item"><div class="layer">Storage</div><div class="tech">localStorage</div></div>
-      <div class="tech-item"><div class="layer">Language</div><div class="tech">TypeScript 5.x</div></div>
+    <div class="req-group">
+      <div class="req-group-title"><span class="dot" style="background:#6b7280"></span> Non-Functional (5)</div>
+      <div class="req-bar"><div class="req-bar-fill" style="width:60%;background:#6b7280"></div></div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> NFR-01 60fps with 50+ components</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> NFR-02 Desktop browser support</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> NFR-03 localStorage persistence</div>
+      <div class="req-item"><span class="req-dot" style="background:#34d399"></span> NFR-04 PixiJS v8 WebGL rendering</div>
+      <div class="req-item"><span class="req-dot" style="background:#4b5563"></span> NFR-05 Mobile (deferred)</div>
     </div>
   </div>
 </div>
 
-<!-- Tab: Artifacts -->
+<!-- TAB: ARTIFACTS -->
 <div class="tab-content" id="tab-artifacts">
-  <div class="card-grid">
-    <div class="card artifact-card">
-      <span class="artifact-dot exists"></span>
-      <div class="artifact-info">
-        <h4>PRD.md</h4>
-        <p>Created Apr 4 &bull; Product requirements document</p>
-      </div>
+  <div class="artifact-grid">
+    <div class="artifact-card">
+      <span class="status-dot green"></span>
+      <div><div class="artifact-name">PRD.md</div><div class="artifact-status">Created Apr 4</div></div>
     </div>
-    <div class="card artifact-card">
-      <span class="artifact-dot exists"></span>
-      <div class="artifact-info">
-        <h4>PROJECT_PLAN.md</h4>
-        <p>Created Apr 4 &bull; Architecture &amp; implementation plan</p>
-      </div>
+    <div class="artifact-card">
+      <span class="status-dot green"></span>
+      <div><div class="artifact-name">PROJECT_PLAN.md</div><div class="artifact-status">Updated Apr 5</div></div>
     </div>
-    <div class="card artifact-card">
-      <span class="artifact-dot missing"></span>
-      <div class="artifact-info">
-        <h4>IMPLEMENTATION_LOG.md</h4>
-        <p>Not created &bull; Run /implement</p>
-      </div>
+    <div class="artifact-card">
+      <span class="status-dot green"></span>
+      <div><div class="artifact-name">IMPLEMENTATION_LOG.md</div><div class="artifact-status">Updated Apr 5</div></div>
     </div>
-    <div class="card artifact-card">
-      <span class="artifact-dot missing"></span>
-      <div class="artifact-info">
-        <h4>BUILD_MANIFEST.md</h4>
-        <p>Not created &bull; Run /implement</p>
-      </div>
+    <div class="artifact-card">
+      <span class="status-dot green"></span>
+      <div><div class="artifact-name">DASHBOARD.html</div><div class="artifact-status">Updated Apr 5</div></div>
     </div>
-    <div class="card artifact-card">
-      <span class="artifact-dot missing"></span>
-      <div class="artifact-info">
-        <h4>REVIEW_REPORT.md</h4>
-        <p>Not created &bull; Run /review</p>
-      </div>
+    <div class="artifact-card">
+      <span class="status-dot gray"></span>
+      <div><div class="artifact-name">BUILD_MANIFEST.md</div><div class="artifact-status">Not created</div></div>
     </div>
-    <div class="card artifact-card">
-      <span class="artifact-dot missing"></span>
-      <div class="artifact-info">
-        <h4>TEST_REPORT.md</h4>
-        <p>Not created &bull; Run /test-qa</p>
-      </div>
+    <div class="artifact-card">
+      <span class="status-dot gray"></span>
+      <div><div class="artifact-name">REVIEW_REPORT.md</div><div class="artifact-status">Not created</div></div>
     </div>
-    <div class="card artifact-card">
-      <span class="artifact-dot missing"></span>
-      <div class="artifact-info">
-        <h4>RELEASE.md</h4>
-        <p>Not created &bull; Run /ship</p>
-      </div>
+    <div class="artifact-card">
+      <span class="status-dot gray"></span>
+      <div><div class="artifact-name">TEST_REPORT.md</div><div class="artifact-status">Not created</div></div>
+    </div>
+    <div class="artifact-card">
+      <span class="status-dot gray"></span>
+      <div><div class="artifact-name">RELEASE.md</div><div class="artifact-status">Not created</div></div>
     </div>
   </div>
 </div>
 
-<!-- Tab: Activity -->
+<!-- TAB: ACTIVITY -->
 <div class="tab-content" id="tab-activity">
-  <div class="card">
-    <div class="activity-feed">
-      <div class="activity-item">
-        <span class="activity-dot green"></span>
-        <div>
-          <div class="activity-text"><strong>Presearch complete</strong> — Project plan generated with 6 phases, 53 tasks, 14-day timeline (Apr 5-18). Tech stack: React 19 + Vite + PixiJS v8 + TypeScript, deployed on Cloudflare Pages.</div>
-          <div class="activity-time">April 4, 2026</div>
-        </div>
+  <div class="activity-feed">
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#34d399"></div>
+      <div>
+        <div class="activity-text"><strong>Phase 3: Events & Levels</strong> completed — EventSystem, 3 MVP levels, scoring engine, full game flow with briefing/debrief, tier progression</div>
+        <div class="activity-time">2026-04-05 · 11/11 deliverables · 2 deviations</div>
       </div>
-      <div class="activity-item">
-        <span class="activity-dot purple"></span>
-        <div>
-          <div class="activity-text"><strong>PRD created</strong> — Product requirements document generated with 26 functional requirements, 5 non-functional requirements, 3 user types, and competitive landscape analysis.</div>
-          <div class="activity-time">April 4, 2026</div>
-        </div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#a78bfa"></div>
+      <div>
+        <div class="activity-text"><strong>Deviation:</strong> Added Sandbox Mode (not in plan). Client ports reduced 3→2, LB input ports increased 2→4 per user discussion.</div>
+        <div class="activity-time">2026-04-05 · Phase 3 · Minor</div>
+      </div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#34d399"></div>
+      <div>
+        <div class="activity-text"><strong>Phase 2: Wiring & Simulation</strong> completed — SimulationLoop, all 8 component behaviors, particle system, stat overlays, HUD</div>
+        <div class="activity-time">2026-04-04 · 12/12 deliverables · 4 deviations</div>
+      </div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#a78bfa"></div>
+      <div>
+        <div class="activity-text"><strong>Deviation:</strong> Bidirectional port model with round-trip particles (major, user-approved). Auto-orient connections by component hierarchy. Right-click delete. Pause editing.</div>
+        <div class="activity-time">2026-04-04 · Phase 2 · Major + 3 Minor</div>
+      </div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#34d399"></div>
+      <div>
+        <div class="activity-text"><strong>Phase 1: Foundation</strong> completed — Scaffolding, types, GameEngine, 8 component defs, PixiJS canvas, grid, ports, localStorage</div>
+        <div class="activity-time">2026-04-04 · 8/8 deliverables · No deviations</div>
+      </div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#60a5fa"></div>
+      <div>
+        <div class="activity-text"><strong>Presearch</strong> completed — PROJECT_PLAN.md generated with 6 phases, 51 tasks, 14-day timeline</div>
+        <div class="activity-time">2026-04-04</div>
+      </div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#60a5fa"></div>
+      <div>
+        <div class="activity-text"><strong>PRD</strong> completed — 26 functional requirements, 5 non-functional requirements, 3 user types</div>
+        <div class="activity-time">2026-04-04</div>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-  function switchTab(el, tabId) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.getElementById('tab-' + tabId).classList.add('active');
-    el.classList.add('active');
+function showTab(id){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  event.target.closest('.tab')?.classList.add('active');
+  // fallback if clicked on badge
+  if(!event.target.classList.contains('tab')){
+    event.target.closest('.tab')?.classList.add('active');
   }
+}
+function togglePhase(header){
+  const tasks=header.parentElement.querySelector('.phase-tasks');
+  tasks.classList.toggle('open');
+}
+function copyStart(){
+  navigator.clipboard.writeText('npm run dev').then(()=>{
+    const btn=document.getElementById('start-btn');
+    btn.innerHTML='<span>✓</span> Copied!';
+    setTimeout(()=>{btn.innerHTML='<span>📋</span> <code>npm run dev</code>'},1500);
+  });
+}
 
-  function copyStartCmd() {
-    const cmd = 'npm run dev';
-    navigator.clipboard.writeText(cmd).then(() => {
-      const btn = document.getElementById('start-cmd-btn');
-      const orig = btn.innerHTML;
-      btn.innerHTML = '<span class="icon">&#10003;</span> Copied!';
-      setTimeout(() => { btn.innerHTML = orig; }, 1500);
-    });
-  }
-
-  const LOCAL_URL = '';
-  const PROD_URL = '';
-
-  async function pingUrl(url, dotId, displayId) {
-    if (!url) return;
-    const dot = document.getElementById(dotId);
-    const display = document.getElementById(displayId);
-    try {
-      await fetch(url, { mode: 'no-cors', cache: 'no-cache' });
-      dot.className = 'status-dot green';
-      display.innerHTML = '<a href="' + url + '" target="_blank" style="color:#34d399;text-decoration:underline;">' + url + '</a>';
-    } catch {
-      dot.className = 'status-dot red';
-      display.textContent = url + ' (offline)';
+// Live status check
+const LOCAL_URL='http://localhost:5174';
+async function checkLocal(){
+  const dot=document.getElementById('local-dot');
+  const btn=document.getElementById('start-btn');
+  try{
+    await fetch(LOCAL_URL,{mode:'no-cors'});
+    dot.className='status-dot green pulse';
+    btn.className='start-btn running';
+    btn.innerHTML='<span>●</span> Running';
+  }catch{
+    dot.className='status-dot gray pulse';
+    if(btn.classList.contains('running')){
+      btn.className='start-btn';
+      btn.innerHTML='<span>📋</span> <code>npm run dev</code>';
     }
   }
-
-  function checkStatus() {
-    if (LOCAL_URL) pingUrl(LOCAL_URL, 'local-status-dot', 'local-url-display');
-    if (PROD_URL) pingUrl(PROD_URL, 'prod-status-dot', 'prod-url-display');
-  }
-
-  checkStatus();
-  setInterval(checkStatus, 5000);
+}
+checkLocal();
+setInterval(checkLocal,5000);
 </script>
-
 </body>
 </html>
