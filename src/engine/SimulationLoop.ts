@@ -154,6 +154,7 @@ export class SimulationLoop {
           status: 'flowing',
           sourceComponentId: client.id,
           createdAt: ctx.simTime,
+          passedServer: false,
         });
         ctx.state.simulation.totalRequests++;
         client.stats.requestsPerSecond = client.stats.throughputLimit;

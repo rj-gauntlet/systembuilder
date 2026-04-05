@@ -26,6 +26,7 @@ export function processMessageQueue(
           status: 'flowing',
           sourceComponentId: particle.sourceComponentId,
           createdAt: particle.createdAt,
+          passedServer: particle.passedServer,
         });
       }
       component.stats.requestsPerSecond = Math.min(
@@ -47,6 +48,7 @@ export function processMessageQueue(
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
+        passedServer: particle.passedServer,
       });
     }
 
@@ -63,6 +65,7 @@ export function processMessageQueue(
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
+        passedServer: particle.passedServer,
       });
     }
 
@@ -98,6 +101,7 @@ export function processMessageQueue(
           status: 'flowing',
           sourceComponentId: particle.sourceComponentId,
           createdAt: particle.createdAt,
+          passedServer: particle.passedServer,
         });
       }
     }

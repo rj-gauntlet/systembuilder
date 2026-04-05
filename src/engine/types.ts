@@ -69,6 +69,7 @@ export interface Particle {
   sourceComponentId: string;   // tracks origin for latency measurement
   createdAt: number;           // simulation time when spawned (for latency calc)
   droppedAge?: number;         // ticks since dropped (for drop animation)
+  passedServer: boolean;       // has this request been processed by a server?
 }
 
 export interface Budget {

@@ -4,7 +4,7 @@ import { getHealthyIncoming } from './routeUtils';
 
 /**
  * Server: processes requests, forwards to downstream or sends response back.
- * Handles both reads and writes identically — it's the cache/MQ that differentiates.
+ * Sets passedServer = true on all particles it processes.
  */
 export function processServer(
   component: Component,
@@ -25,9 +25,9 @@ export function processServer(
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
+        passedServer: true,
       });
     } else {
-      // No downstream — generate response
       ctx.removeParticle(particle.id);
       const inConn = ctx.state.connections.find((c) => c.id === particle.connectionId);
       if (inConn) {
@@ -40,6 +40,7 @@ export function processServer(
           status: 'flowing',
           sourceComponentId: particle.sourceComponentId,
           createdAt: particle.createdAt,
+          passedServer: true,
         });
       }
     }
@@ -48,7 +49,6 @@ export function processServer(
       component.stats.requestsPerSecond + 1,
     );
   } else {
-    // Response — forward back upstream
     ctx.removeParticle(particle.id);
     const inConns = getHealthyIncoming(component.id, ctx);
     if (inConns.length > 0) {
@@ -62,6 +62,7 @@ export function processServer(
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
+        passedServer: true,
       });
     }
   }

@@ -35,6 +35,7 @@ export function processLoadBalancer(
       status: 'flowing',
       sourceComponentId: particle.sourceComponentId,
       createdAt: particle.createdAt,
+      passedServer: particle.passedServer,
     });
 
     component.stats.requestsPerSecond = Math.min(
@@ -55,6 +56,7 @@ export function processLoadBalancer(
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
+        passedServer: particle.passedServer,
       });
     }
   }

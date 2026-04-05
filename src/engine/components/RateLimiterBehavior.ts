@@ -42,6 +42,7 @@ export function processRateLimiter(
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
+        passedServer: particle.passedServer,
       });
     }
 
@@ -63,6 +64,7 @@ export function processRateLimiter(
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
+        passedServer: particle.passedServer,
       });
     }
   }

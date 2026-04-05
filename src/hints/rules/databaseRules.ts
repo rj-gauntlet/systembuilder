@@ -39,4 +39,24 @@ export const databaseRules: HintRule[] = [
     relatedComponentType: 'database',
     cooldownMs: 20000,
   },
+  {
+    id: 'db-no-server-upstream',
+    condition: (s) => {
+      const hasDB = s.components.some((c) => c.type === 'database');
+      const hasServer = s.components.some((c) => c.type === 'server');
+      return hasDB && !hasServer && s.components.length > 1;
+    },
+    variants: [
+      'Your database is rejecting all requests. Databases only accept queries from application servers — where\'s your server?',
+      'Requests are being dropped at the database. It won\'t accept connections without a server processing them first.',
+      'No server in your architecture. Databases need a server to handle authentication, validation, and query logic.',
+      'The database is dropping everything. In real systems, clients never connect directly to databases — they go through servers.',
+      'Your database refuses direct connections. What component sits between users and data to process business logic?',
+      'All requests are dying at the database. You need a server — it\'s the application layer that knows how to query data.',
+      'Database dropping requests — it only accepts traffic that has been processed by a server first.',
+      'No server means no application logic. The database doesn\'t know how to handle raw user requests.',
+    ],
+    relatedComponentType: 'database',
+    cooldownMs: 15000,
+  },
 ];

@@ -29,6 +29,7 @@ export function processCache(
           status: 'flowing',
           sourceComponentId: particle.sourceComponentId,
           createdAt: particle.createdAt,
+          passedServer: particle.passedServer,
         });
       }
       component.stats.requestsPerSecond = Math.min(
@@ -56,6 +57,7 @@ export function processCache(
           status: 'flowing',
           sourceComponentId: particle.sourceComponentId,
           createdAt: particle.createdAt,
+          passedServer: particle.passedServer,
         });
       }
     } else {
@@ -73,6 +75,7 @@ export function processCache(
           status: 'flowing',
           sourceComponentId: particle.sourceComponentId,
           createdAt: particle.createdAt,
+          passedServer: particle.passedServer,
         });
       }
     }
@@ -98,6 +101,7 @@ export function processCache(
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
+        passedServer: particle.passedServer,
       });
     }
   }
