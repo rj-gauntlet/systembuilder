@@ -1,14 +1,20 @@
-import { useState, useCallback, useRef, useMemo } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { GameEngine } from '../../engine/GameEngine';
 import { GameCanvas } from '../../renderer/GameCanvas';
 import { Toolbox } from '../components/Toolbox';
-import type { ComponentType, LevelDefinition } from '../../engine/types';
+import { ChatPanel } from '../components/ChatPanel';
+import { HintToast } from '../components/HintToast';
+import { OpenAIProvider } from '../../ai/OpenAIProvider';
+import { HintEngine } from '../../hints/HintEngine';
+import { ProgressStore } from '../../storage/ProgressStore';
+import type { ComponentType, LevelDefinition, Score } from '../../engine/types';
+import type { ActiveHint } from '../../hints/types';
 import { InputHandler } from '../../renderer/InputHandler';
 
 interface GameScreenProps {
   level?: LevelDefinition;
   onExit?: () => void;
-  onComplete?: (score: import('../../engine/types').Score) => void;
+  onComplete?: (score: Score) => void;
 }
 
 export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
@@ -23,18 +29,42 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
   const inputRef = useRef<InputHandler | null>(null);
   const [activeMode, setActiveMode] = useState<'select' | 'place' | 'connect'>('select');
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
+  const [showChat, setShowChat] = useState(false);
+  const [showBriefing, setShowBriefing] = useState(false);
+  const [chatPrefill, setChatPrefill] = useState<string | undefined>();
+  const [activeHint, setActiveHint] = useState<ActiveHint | null>(null);
 
   const completedRef = useRef(false);
 
+  // AI provider — reads user API key from settings
+  const aiProvider = useMemo(() => {
+    const store = new ProgressStore();
+    return new OpenAIProvider({ apiKey: store.getProgress().settings.userApiKey });
+  }, []);
+
+  // Hint engine
+  const hintEngine = useMemo(() => new HintEngine(), []);
+
   const triggerUpdate = useCallback(() => {
     forceUpdate((n) => n + 1);
-    // Check if simulation completed (level mode)
     const state = engine.getState();
     if (state.simulation.status === 'complete' && onComplete && !completedRef.current) {
       completedRef.current = true;
       onComplete(state.score);
     }
   }, [engine, onComplete]);
+
+  // Evaluate hints periodically during simulation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const state = engine.getState();
+      if (state.simulation.status === 'running' || state.simulation.status === 'building') {
+        const hint = hintEngine.evaluate(state);
+        if (hint) setActiveHint(hint);
+      }
+    }, 3000); // check every 3 seconds
+    return () => clearInterval(interval);
+  }, [engine, hintEngine]);
 
   const handleSelectComponent = useCallback(
     (type: ComponentType) => {
@@ -57,7 +87,10 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
     inputRef.current?.setConnectMode();
   }, []);
 
-  const [showBriefing, setShowBriefing] = useState(false);
+  const handleAskAboutThis = useCallback((text: string) => {
+    setChatPrefill(`The hint system suggested: "${text}" — can you explain why this matters for my architecture?`);
+    setShowChat(true);
+  }, []);
 
   const state = engine.getState();
   const simStatus = state.simulation.status;
@@ -78,6 +111,15 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
               {showBriefing ? 'Hide' : 'Objectives'}
             </button>
           )}
+          <button
+            style={{
+              ...styles.briefingButton,
+              ...(showChat ? { background: '#3b82f6', color: '#fff', borderColor: '#3b82f6' } : {}),
+            }}
+            onClick={() => setShowChat(!showChat)}
+          >
+            AI Chat
+          </button>
           {level && (
             <span style={styles.timer}>
               {simStatus === 'draining'
@@ -132,14 +174,25 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
           budget={state.budget}
           disabled={!isEditable}
         />
-        <div style={styles.canvasWrapper}>
-          <GameCanvas
-            engine={engine}
-            onStateChange={triggerUpdate}
-            inputHandlerRef={inputRef}
-            level={level}
-          />
+        <div style={styles.canvasArea}>
+          <div style={styles.canvasWrapper}>
+            <GameCanvas
+              engine={engine}
+              onStateChange={triggerUpdate}
+              inputHandlerRef={inputRef}
+              level={level}
+            />
+          </div>
+          <HintToast hint={activeHint} onAskAboutThis={handleAskAboutThis} />
         </div>
+        {showChat && (
+          <ChatPanel
+            provider={aiProvider}
+            gameState={state}
+            prefill={chatPrefill}
+            onClearPrefill={() => setChatPrefill(undefined)}
+          />
+        )}
       </div>
     </div>
   );
@@ -249,11 +302,15 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     overflow: 'hidden',
   },
-  canvasWrapper: {
+  canvasArea: {
     flex: 1,
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 16,
+  },
+  canvasWrapper: {
+    position: 'relative',
   },
 };

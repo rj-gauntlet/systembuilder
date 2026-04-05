@@ -4,6 +4,7 @@ import { LevelSelect } from './ui/screens/LevelSelect';
 import { Briefing } from './ui/screens/Briefing';
 import { GameScreen } from './ui/screens/GameScreen';
 import { Debrief } from './ui/screens/Debrief';
+import { Settings } from './ui/screens/Settings';
 import { ProgressStore } from './storage/ProgressStore';
 
 type Screen =
@@ -12,7 +13,8 @@ type Screen =
   | { type: 'briefing'; level: LevelDefinition }
   | { type: 'game'; level: LevelDefinition }
   | { type: 'game-sandbox' }
-  | { type: 'debrief'; level: LevelDefinition; score: Score };
+  | { type: 'debrief'; level: LevelDefinition; score: Score }
+  | { type: 'settings' };
 
 function getStore() { return new ProgressStore(); }
 
@@ -59,8 +61,18 @@ export default function App() {
         <div style={styles.menuStars}>
           Total Stars: {store.getProgress().totalStars}
         </div>
+        <button
+          onClick={() => setScreen({ type: 'settings' })}
+          style={styles.settingsButton}
+        >
+          Settings
+        </button>
       </div>
     );
+  }
+
+  if (screen.type === 'settings') {
+    return <Settings onBack={() => setScreen({ type: 'menu' })} />;
   }
 
   if (screen.type === 'level-select') {
@@ -176,5 +188,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     color: '#fbbf24',
     fontWeight: 700,
+  },
+  settingsButton: {
+    marginTop: 8,
+    padding: '8px 20px',
+    border: '1px solid #334155',
+    borderRadius: 8,
+    background: 'transparent',
+    color: '#64748b',
+    fontSize: 13,
+    cursor: 'pointer',
   },
 };
