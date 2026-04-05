@@ -23,7 +23,7 @@ export function processRateLimiter(
     if (count >= component.stats.throughputLimit) {
       ctx.removeParticle(particle.id);
       particle.status = 'dropped';
-      ctx.state.simulation.droppedRequests++;
+      ctx.state.simulation.droppedRequests += particle.weight ?? 1;
       return;
     }
 
@@ -43,6 +43,7 @@ export function processRateLimiter(
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
         passedServer: particle.passedServer,
+        weight: particle.weight ?? 1,
       });
     }
 
@@ -65,6 +66,7 @@ export function processRateLimiter(
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
         passedServer: particle.passedServer,
+        weight: particle.weight ?? 1,
       });
     }
   }

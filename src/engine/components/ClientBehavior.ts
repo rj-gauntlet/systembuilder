@@ -13,8 +13,9 @@ export function processClient(
   if (particle.direction === 'response') {
     // Response completed the round trip — record latency and consume
     const roundTripTime = ctx.simTime - particle.createdAt;
-    ctx.state.simulation.completedRequests++;
-    ctx.state.simulation.totalLatency += roundTripTime;
+    const w = particle.weight ?? 1;
+    ctx.state.simulation.completedRequests += w;
+    ctx.state.simulation.totalLatency += roundTripTime * w;
     if (roundTripTime > ctx.state.simulation.maxLatency) {
       ctx.state.simulation.maxLatency = roundTripTime;
     }

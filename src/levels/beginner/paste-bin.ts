@@ -65,9 +65,9 @@ export const pasteBin: LevelDefinition = {
     // Minimal (Client→Server→DB): will fail server crash → low uptime
     // CDN-only or Cache-only: better but single server = crash vulnerability
     // Optimal (CDN→Server→Cache→DB): handles everything
-    oneStar:   { minUptime: 50, maxLatency: 150, maxCostRatio: 300, mustSurvive: false },
-    twoStar:   { minUptime: 88, maxLatency: 90,  maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 93, maxLatency: 65,  maxCostRatio: 175, mustSurvive: true },
+    oneStar:   { minUptime: 40, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
+    twoStar:   { minUptime: 75, maxLatency: 100, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 85, maxLatency: 70,  maxCostRatio: 175, mustSurvive: true },
   },
   simulationDuration: 90,
 };

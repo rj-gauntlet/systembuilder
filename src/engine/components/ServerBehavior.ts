@@ -26,6 +26,7 @@ export function processServer(
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
         passedServer: true,
+        weight: particle.weight ?? 1,
       });
     } else {
       ctx.removeParticle(particle.id);
@@ -41,6 +42,7 @@ export function processServer(
           sourceComponentId: particle.sourceComponentId,
           createdAt: particle.createdAt,
           passedServer: true,
+          weight: particle.weight ?? 1,
         });
       }
     }
@@ -63,6 +65,7 @@ export function processServer(
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
         passedServer: true,
+        weight: particle.weight ?? 1,
       });
     }
   }

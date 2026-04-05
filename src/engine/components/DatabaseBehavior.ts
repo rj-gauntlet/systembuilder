@@ -15,7 +15,7 @@ export function processDatabase(
     // Reject requests that never passed through a server
     if (!particle.passedServer) {
       particle.status = 'dropped';
-      ctx.state.simulation.droppedRequests++;
+      ctx.state.simulation.droppedRequests += particle.weight ?? 1;
       return;
     }
 
@@ -36,6 +36,7 @@ export function processDatabase(
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
         passedServer: particle.passedServer,
+        weight: particle.weight ?? 1,
       });
     }
 

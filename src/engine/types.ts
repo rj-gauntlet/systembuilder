@@ -70,6 +70,7 @@ export interface Particle {
   createdAt: number;           // simulation time when spawned (for latency calc)
   droppedAge?: number;         // ticks since dropped (for drop animation)
   passedServer: boolean;       // has this request been processed by a server?
+  weight: number;              // how many real requests this particle represents
 }
 
 export interface Budget {

@@ -90,9 +90,10 @@ export class SimulationLoop {
 
       // Complete when all particles resolved OR drain timeout reached
       if (particlesInFlight === 0 || drainElapsed >= SimulationLoop.DRAIN_DURATION) {
-        // Count remaining in-flight particles as dropped
+        // Count remaining in-flight particles as dropped (weighted)
         if (particlesInFlight > 0) {
-          state.simulation.droppedRequests += particlesInFlight;
+          const remainingWeight = state.particles.reduce((sum, p) => sum + (p.weight ?? 1), 0);
+          state.simulation.droppedRequests += remainingWeight;
           state.particles = [];
         }
         state.simulation.status = 'complete';
@@ -132,9 +133,9 @@ export class SimulationLoop {
       const outConns = ctx.getOutgoingConnections(client.id);
       if (outConns.length === 0) continue;
 
-      // Spawn ~4 visual particles per second per client (scaled by throughput)
-      // Higher throughput = slightly faster spawn, but capped for readability
-      const spawnRate = Math.min(6, 2 + (client.stats.throughputLimit / 500));
+      // Visual spawn rate: scales with throughput but capped for readability
+      // More particles during spikes for visual impact
+      const spawnRate = Math.min(10, 2 + (client.stats.throughputLimit / 300));
       const interval = 60 / spawnRate; // ticks between spawns
       const timer = (this.clientTimers.get(client.id) ?? 0) + 1;
       this.clientTimers.set(client.id, timer);
@@ -142,7 +143,10 @@ export class SimulationLoop {
       if (timer >= interval) {
         this.clientTimers.set(client.id, 0);
 
-        // Pick a random outgoing connection
+        // Each particle represents multiple real requests
+        // weight = throughput / visual_rate so the product = actual req/s
+        const weight = Math.max(1, Math.round(client.stats.throughputLimit / (spawnRate * 10)));
+
         const conn = outConns[Math.floor(Math.random() * outConns.length)];
         const kind = Math.random() < ctx.state.writeRatio ? 'write' as const : 'read' as const;
         ctx.spawnParticle({
@@ -155,8 +159,9 @@ export class SimulationLoop {
           sourceComponentId: client.id,
           createdAt: ctx.simTime,
           passedServer: false,
+          weight,
         });
-        ctx.state.simulation.totalRequests++;
+        ctx.state.simulation.totalRequests += weight;
         client.stats.requestsPerSecond = client.stats.throughputLimit;
       }
     }
@@ -195,7 +200,7 @@ export class SimulationLoop {
           const dest = ctx.state.components.find((c) => c.id === conn.fromComponentId);
           if (dest && dest.health === 'failed') {
             particle.status = 'dropped';
-            ctx.state.simulation.droppedRequests++;
+            ctx.state.simulation.droppedRequests += particle.weight ?? 1;
             continue;
           }
           particle.status = 'queued';
@@ -220,18 +225,18 @@ export class SimulationLoop {
 
       const def = COMPONENT_DEFS[component.type];
 
-      // Check capacity — drop if overloaded
-      const processingCount = ctx.state.particles.filter(
-        (p) => p.stuckInComponent === component.id,
-      ).length;
-      const capacityRatio = processingCount / Math.max(1, def.throughputLimit * 0.1);
+      // Check capacity using weighted load
+      const weightHere = ctx.state.particles
+        .filter((p) => p.stuckInComponent === component.id)
+        .reduce((sum, p) => sum + (p.weight ?? 1), 0);
+      const capacityRatio = weightHere / Math.max(1, def.throughputLimit * 0.3);
       component.load = Math.min(1, capacityRatio);
 
       for (const particle of queued) {
         if (component.health === 'failed') {
           // Failed components drop all requests
           particle.status = 'dropped';
-          ctx.state.simulation.droppedRequests++;
+          ctx.state.simulation.droppedRequests += particle.weight ?? 1;
           continue;
         }
 
@@ -240,7 +245,7 @@ export class SimulationLoop {
           // Random chance to drop based on overload
           if (Math.random() < 0.3) {
             particle.status = 'dropped';
-            ctx.state.simulation.droppedRequests++;
+            ctx.state.simulation.droppedRequests += particle.weight ?? 1;
             continue;
           }
         }
@@ -267,13 +272,13 @@ export class SimulationLoop {
     for (const component of ctx.state.components) {
       const def = COMPONENT_DEFS[component.type];
 
-      // Count particles currently in/targeting this component
-      const particlesHere = ctx.state.particles.filter(
-        (p) => p.stuckInComponent === component.id,
-      ).length;
+      // Sum the weight of particles in/targeting this component
+      const weightHere = ctx.state.particles
+        .filter((p) => p.stuckInComponent === component.id)
+        .reduce((sum, p) => sum + (p.weight ?? 1), 0);
 
-      // Update load
-      component.load = Math.min(1, particlesHere / Math.max(1, def.throughputLimit * 0.05));
+      // Load = conceptual requests vs throughput capacity
+      component.load = Math.min(1, weightHere / Math.max(1, def.throughputLimit * 0.3));
 
       // Update health based on load
       if (component.health !== 'failed') {

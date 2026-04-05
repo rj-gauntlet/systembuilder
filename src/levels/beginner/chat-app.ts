@@ -74,9 +74,9 @@ export const chatApp: LevelDefinition = {
     // No-MQ: can survive but writes back up → lower uptime + higher latency
     // Budget (Client→RL→Server→MQ→DB): no redundancy, server crash kills it
     // Optimal (RL→LB→2xSrv→MQ→DB): handles everything
-    oneStar:   { minUptime: 40, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
-    twoStar:   { minUptime: 90, maxLatency: 130, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 94, maxLatency: 115, maxCostRatio: 150, mustSurvive: true },
+    oneStar:   { minUptime: 35, maxLatency: 250, maxCostRatio: 300, mustSurvive: false },
+    twoStar:   { minUptime: 70, maxLatency: 150, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 78, maxLatency: 125, maxCostRatio: 150, mustSurvive: true },
   },
   simulationDuration: 90,
 };

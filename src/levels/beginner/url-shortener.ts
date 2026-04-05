@@ -53,9 +53,9 @@ export const urlShortener: LevelDefinition = {
     // Minimal (Client→Server→DB): ~87% uptime, ~52ms, $130 → should get 1 star
     // No-redundancy (Client→Cache→Server→DB): ~94% uptime, ~43ms, $155 → should get 2 stars
     // Optimal (Client→Cache→LB→2xSrv→DB): ~98% uptime, ~53ms, $235 → should get 3 stars
-    oneStar:   { minUptime: 50, maxLatency: 150, maxCostRatio: 300, mustSurvive: false },
-    twoStar:   { minUptime: 88, maxLatency: 90,  maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 95, maxLatency: 75,  maxCostRatio: 150, mustSurvive: true },
+    oneStar:   { minUptime: 40, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
+    twoStar:   { minUptime: 70, maxLatency: 100, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 82, maxLatency: 90,  maxCostRatio: 150, mustSurvive: true },
   },
   simulationDuration: 90,
 };
