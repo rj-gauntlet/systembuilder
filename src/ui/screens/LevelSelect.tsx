@@ -52,17 +52,21 @@ export function LevelSelect({ onSelectLevel, onBack }: LevelSelectProps) {
                   >
                     <div style={styles.levelName}>{level.name}</div>
                     <div style={styles.starRow}>
-                      {[1, 2, 3].map((s) => (
+                      {[1, 2, 3].map((s) => {
+                        const earned = s <= stars;
+                        return (
                         <span
                           key={s}
                           style={{
                             ...styles.star,
-                            color: s <= stars ? '#fbbf24' : '#334155',
+                            color: earned ? '#fbbf24' : '#1e293b',
+                            opacity: earned ? 1 : 0.7,
                           }}
                         >
-                          ★
+                          {earned ? '\u2605' : '\u2606'}
                         </span>
-                      ))}
+                        );
+                      })}
                     </div>
                     <div style={styles.levelMeta}>
                       Budget: ${level.briefing.monthlyBudget}/mo

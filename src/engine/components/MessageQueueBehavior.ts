@@ -76,7 +76,30 @@ export function processMessageQueue(
       component.stats.requestsPerSecond + 1,
     );
   } else {
-    // Responses from downstream consumers — consume (ack already sent)
-    ctx.removeParticle(particle.id);
+    if (particle.kind === 'write') {
+      // Write response from downstream — consume (ack already sent to client)
+      ctx.removeParticle(particle.id);
+    } else {
+      // Read response from downstream — forward back upstream
+      ctx.removeParticle(particle.id);
+      const inConns = ctx.getIncomingConnections(component.id);
+      const healthyConns = inConns.filter((c) => {
+        const from = ctx.state.components.find((comp) => comp.id === c.fromComponentId);
+        return from && from.health !== 'failed';
+      });
+      if (healthyConns.length > 0) {
+        const conn = healthyConns[Math.floor(Math.random() * healthyConns.length)];
+        ctx.spawnParticle({
+          connectionId: conn.id,
+          position: 1,
+          speed: particle.speed,
+          direction: 'response',
+          kind: particle.kind,
+          status: 'flowing',
+          sourceComponentId: particle.sourceComponentId,
+          createdAt: particle.createdAt,
+        });
+      }
+    }
   }
 }

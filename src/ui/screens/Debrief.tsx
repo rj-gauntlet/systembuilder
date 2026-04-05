@@ -18,18 +18,20 @@ export function Debrief({ score, level, maxLatencyMs, onRetry, onLevelSelect }: 
         <h2 style={styles.levelName}>{level.briefing.system}</h2>
 
         <div style={styles.starRow}>
-          {[1, 2, 3].map((s) => (
-            <span
-              key={s}
-              style={{
+          {[1, 2, 3].map((s) => {
+            const earned = s <= score.stars;
+            return (
+              <span key={s} style={{
                 ...styles.star,
-                color: s <= score.stars ? '#fbbf24' : '#334155',
-                transform: s <= score.stars ? 'scale(1)' : 'scale(0.8)',
-              }}
-            >
-              ★
-            </span>
-          ))}
+                color: earned ? '#fbbf24' : '#1e293b',
+                textShadow: earned ? '0 0 12px #fbbf2466' : 'none',
+                opacity: earned ? 1 : 0.7,
+                transform: 'scale(1)',
+              }}>
+                {earned ? '\u2605' : '\u2606'}
+              </span>
+            );
+          })}
         </div>
 
         <div style={styles.metricsGrid}>
