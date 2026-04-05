@@ -17,6 +17,7 @@ export const pasteBin: LevelDefinition = {
     monthlyBudget: 350,
     expectedTraffic: '~150 requests/second, 80% reads',
   },
+  writeRatio: 0.2, // 80% reads — pastes are read many times, written once
   scriptedEvents: [
     {
       triggerTime: 25,
@@ -42,16 +43,18 @@ export const pasteBin: LevelDefinition = {
     },
   ],
   randomEventPool: ['traffic-spike', 'viral-content', 'slow-query'],
+  // 3-star: Client → CDN → Server → Cache → DB ($175)
+  // CDN intercepts 85% at the edge → avg ~34ms
   optimalBenchmark: {
     uptime: 95,
-    avgLatency: 70,
-    monthlyCost: 175, // Client, CDN, Server, Cache, Database
+    avgLatency: 34,
+    monthlyCost: 175,
     componentCount: 5,
   },
   starThresholds: {
-    oneStar: { minUptime: 40, maxLatency: 500, maxCostRatio: 300, mustSurvive: false },
-    twoStar: { minUptime: 65, maxLatency: 250, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 80, maxLatency: 150, maxCostRatio: 175, mustSurvive: true },
+    oneStar:   { minUptime: 40, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
+    twoStar:   { minUptime: 65, maxLatency: 120, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 80, maxLatency: 65,  maxCostRatio: 175, mustSurvive: true },
   },
   simulationDuration: 90,
 };

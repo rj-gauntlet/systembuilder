@@ -10,13 +10,14 @@ export const urlShortener: LevelDefinition = {
       'Build a URL shortening service like bit.ly. Users create short links and get redirected to the original URL. Read-heavy traffic — most requests are redirects, not link creation.',
     objectives: [
       'Handle steady read-heavy traffic without dropping requests',
-      'Keep average latency under 100ms',
+      'Keep average latency low — place caches where they intercept the most traffic',
       'Stay within the monthly budget',
       'Survive a traffic spike when a popular link goes viral',
     ],
     monthlyBudget: 300,
     expectedTraffic: '~200 requests/second, 90% reads',
   },
+  writeRatio: 0.1, // 90% reads — URL redirects are read-heavy
   scriptedEvents: [
     {
       triggerTime: 20,
@@ -40,16 +41,18 @@ export const urlShortener: LevelDefinition = {
     },
   ],
   randomEventPool: ['traffic-spike', 'slow-query'],
+  // 3-star: Client → Cache → LB → Server ×2 → DB ($235)
+  // Cache at front intercepts 70% of reads → avg ~48ms
   optimalBenchmark: {
     uptime: 95,
-    avgLatency: 80,
+    avgLatency: 48,
     monthlyCost: 235,
-    componentCount: 6, // Client, Cache, LB, Server x2, Database
+    componentCount: 6,
   },
   starThresholds: {
-    oneStar: { minUptime: 40, maxLatency: 500, maxCostRatio: 300, mustSurvive: false },
-    twoStar: { minUptime: 65, maxLatency: 250, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 80, maxLatency: 150, maxCostRatio: 175, mustSurvive: true },
+    oneStar:   { minUptime: 40, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
+    twoStar:   { minUptime: 65, maxLatency: 120, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 80, maxLatency: 75,  maxCostRatio: 175, mustSurvive: true },
   },
   simulationDuration: 90,
 };

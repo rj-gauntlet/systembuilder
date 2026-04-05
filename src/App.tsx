@@ -16,7 +16,7 @@ type Screen =
   | { type: 'briefing'; level: LevelDefinition }
   | { type: 'game'; level: LevelDefinition }
   | { type: 'game-sandbox' }
-  | { type: 'debrief'; level: LevelDefinition; score: Score }
+  | { type: 'debrief'; level: LevelDefinition; score: Score; maxLatencyMs: number }
   | { type: 'settings' };
 
 function getStore() { return new ProgressStore(); }
@@ -32,7 +32,7 @@ export default function App() {
     setShowTutorial(false);
   };
 
-  function handleLevelComplete(level: LevelDefinition, score: Score) {
+  function handleLevelComplete(level: LevelDefinition, score: Score, maxLatencyMs: number) {
     store.saveLevelResult(level.id, score);
 
     // Check tier unlocks: need min 1 star on every beginner level to unlock intermediate
@@ -45,7 +45,7 @@ export default function App() {
       store.unlockTier('intermediate');
     }
 
-    setScreen({ type: 'debrief', level, score });
+    setScreen({ type: 'debrief', level, score, maxLatencyMs });
   }
 
   if (screen.type === 'menu') {
@@ -121,7 +121,7 @@ export default function App() {
         key={gameKey}
         level={screen.level}
         onExit={() => setScreen({ type: 'level-select' })}
-        onComplete={(score) => handleLevelComplete(screen.level, score)}
+        onComplete={(score, maxLatMs) => handleLevelComplete(screen.level, score, maxLatMs)}
       />
     );
   }
@@ -140,6 +140,7 @@ export default function App() {
       <Debrief
         score={screen.score}
         level={screen.level}
+        maxLatencyMs={screen.maxLatencyMs}
         onRetry={() => {
           setGameKey((k) => k + 1);
           setScreen({ type: 'game', level: screen.level });

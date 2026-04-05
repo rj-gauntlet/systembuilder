@@ -14,7 +14,7 @@ import { InputHandler } from '../../renderer/InputHandler';
 interface GameScreenProps {
   level?: LevelDefinition;
   onExit?: () => void;
-  onComplete?: (score: Score) => void;
+  onComplete?: (score: Score, maxLatencyMs: number) => void;
 }
 
 export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
@@ -50,7 +50,7 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
     const state = engine.getState();
     if (state.simulation.status === 'complete' && onComplete && !completedRef.current) {
       completedRef.current = true;
-      onComplete(state.score);
+      onComplete(state.score, state.simulation.maxLatency * 15);
     }
   }, [engine, onComplete]);
 

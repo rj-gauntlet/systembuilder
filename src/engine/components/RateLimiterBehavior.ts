@@ -2,13 +2,8 @@ import type { Component, Particle } from '../types';
 import type { SimulationContext } from '../SimulationLoop';
 import { getHealthyIncoming } from './routeUtils';
 
-/**
- * Rate Limiter: allows requests through up to throughput limit.
- * Excess requests are dropped. Passes responses through unchanged.
- */
-
 const windowCounters: Map<string, number> = new Map();
-const WINDOW_TICKS = 60; // 1 second window at 60 tps
+const WINDOW_TICKS = 60;
 let tickCounter = 0;
 
 export function processRateLimiter(
@@ -18,7 +13,6 @@ export function processRateLimiter(
 ): void {
   tickCounter++;
 
-  // Reset window counter periodically
   if (tickCounter % WINDOW_TICKS === 0) {
     windowCounters.set(component.id, 0);
   }
@@ -27,7 +21,6 @@ export function processRateLimiter(
     const count = windowCounters.get(component.id) ?? 0;
 
     if (count >= component.stats.throughputLimit) {
-      // Over limit — drop request
       ctx.removeParticle(particle.id);
       particle.status = 'dropped';
       ctx.state.simulation.droppedRequests++;
@@ -36,7 +29,6 @@ export function processRateLimiter(
 
     windowCounters.set(component.id, count + 1);
 
-    // Forward to downstream
     const outConns = ctx.getOutgoingConnections(component.id);
     if (outConns.length > 0) {
       const conn = outConns[Math.floor(Math.random() * outConns.length)];
@@ -46,6 +38,7 @@ export function processRateLimiter(
         position: 0,
         speed: particle.speed,
         direction: 'request',
+        kind: particle.kind,
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
@@ -57,7 +50,6 @@ export function processRateLimiter(
       component.stats.requestsPerSecond + 1,
     );
   } else {
-    // Response — pass through back upstream
     ctx.removeParticle(particle.id);
     const inConns = getHealthyIncoming(component.id, ctx);
     if (inConns.length > 0) {
@@ -67,6 +59,7 @@ export function processRateLimiter(
         position: 1,
         speed: particle.speed,
         direction: 'response',
+        kind: particle.kind,
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,

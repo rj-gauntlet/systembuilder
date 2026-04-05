@@ -28,7 +28,7 @@ function createDefaultScore(): Score {
 }
 
 function createDefaultSimulation(): SimulationState {
-  return { status: 'building', elapsedTime: 0, totalRequests: 0, completedRequests: 0, droppedRequests: 0 };
+  return { status: 'building', elapsedTime: 0, totalRequests: 0, completedRequests: 0, droppedRequests: 0, totalLatency: 0, maxLatency: 0 };
 }
 
 export class GameEngine {
@@ -45,6 +45,7 @@ export class GameEngine {
       score: createDefaultScore(),
       simulation: createDefaultSimulation(),
       levelId: null,
+      writeRatio: 0.3, // default sandbox write ratio
     };
   }
 
@@ -286,6 +287,7 @@ export class GameEngine {
       score: createDefaultScore(),
       simulation: createDefaultSimulation(),
       levelId: null,
+      writeRatio: 0.3, // default sandbox write ratio
     };
     this._phase = 'building';
     nextId = 1;

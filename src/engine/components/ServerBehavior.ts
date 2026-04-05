@@ -4,8 +4,7 @@ import { getHealthyIncoming } from './routeUtils';
 
 /**
  * Server: processes requests, forwards to downstream or sends response back.
- * If connected to downstream components (DB, cache), forwards the request.
- * If no downstream, generates a response directly.
+ * Handles both reads and writes identically — it's the cache/MQ that differentiates.
  */
 export function processServer(
   component: Component,
@@ -13,10 +12,8 @@ export function processServer(
   ctx: SimulationContext,
 ): void {
   if (particle.direction === 'request') {
-    // Try to forward to a downstream component
     const outConns = ctx.getOutgoingConnections(component.id);
     if (outConns.length > 0) {
-      // Forward to a downstream connection
       const conn = outConns[Math.floor(Math.random() * outConns.length)];
       ctx.removeParticle(particle.id);
       ctx.spawnParticle({
@@ -24,12 +21,13 @@ export function processServer(
         position: 0,
         speed: particle.speed,
         direction: 'request',
+        kind: particle.kind,
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
       });
     } else {
-      // No downstream — generate response on the incoming connection
+      // No downstream — generate response
       ctx.removeParticle(particle.id);
       const inConn = ctx.state.connections.find((c) => c.id === particle.connectionId);
       if (inConn) {
@@ -38,6 +36,7 @@ export function processServer(
           position: 1,
           speed: particle.speed,
           direction: 'response',
+          kind: particle.kind,
           status: 'flowing',
           sourceComponentId: particle.sourceComponentId,
           createdAt: particle.createdAt,
@@ -49,7 +48,7 @@ export function processServer(
       component.stats.requestsPerSecond + 1,
     );
   } else {
-    // Response coming back from downstream — forward back upstream
+    // Response — forward back upstream
     ctx.removeParticle(particle.id);
     const inConns = getHealthyIncoming(component.id, ctx);
     if (inConns.length > 0) {
@@ -59,6 +58,7 @@ export function processServer(
         position: 1,
         speed: particle.speed,
         direction: 'response',
+        kind: particle.kind,
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,

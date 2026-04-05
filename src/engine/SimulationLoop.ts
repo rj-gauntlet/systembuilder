@@ -10,6 +10,10 @@ function particleUid(): string {
 }
 
 const TICK_RATE = 1 / 60;          // 60 ticks per second
+// Converts simulation seconds to display milliseconds.
+// Particle travel speed is for visual clarity, not latency accuracy.
+// Scale factor calibrated so: cache hit ~25ms, full chain ~100ms.
+export const LATENCY_SCALE = 15;
 const PARTICLE_BASE_SPEED = 0.02;  // position units per tick (0-1 range)
 
 export interface SimulationContext {
@@ -30,8 +34,9 @@ export class SimulationLoop {
   private drainStartTime = 0;
   private static readonly DRAIN_DURATION = 5; // seconds
 
-  loadLevel(level: LevelDefinition): void {
+  loadLevel(level: LevelDefinition, state: GameState): void {
     this.level = level;
+    state.writeRatio = level.writeRatio;
     this.eventSystem.loadLevel(level);
   }
 
@@ -139,11 +144,13 @@ export class SimulationLoop {
 
         // Pick a random outgoing connection
         const conn = outConns[Math.floor(Math.random() * outConns.length)];
+        const kind = Math.random() < ctx.state.writeRatio ? 'write' as const : 'read' as const;
         ctx.spawnParticle({
           connectionId: conn.id,
           position: 0,
           speed: PARTICLE_BASE_SPEED,
           direction: 'request',
+          kind,
           status: 'flowing',
           sourceComponentId: client.id,
           createdAt: ctx.simTime,
@@ -242,15 +249,13 @@ export class SimulationLoop {
       }
     }
 
-    // Clean up dropped particles after a brief visual delay
+    // Animate dropped particles (red flash + expand) then remove
     const dropped = ctx.state.particles.filter((p) => p.status === 'dropped');
     for (const p of dropped) {
-      // Remove dropped particles after they've been visible for a moment
-      if (!p.stuckInComponent) {
+      p.stuckInComponent = undefined; // free from component so renderer can show it
+      p.droppedAge = (p.droppedAge ?? 0) + 1;
+      if (p.droppedAge > 20) {
         ctx.removeParticle(p.id);
-      } else {
-        // Mark for removal next tick
-        p.stuckInComponent = undefined;
       }
     }
   }
@@ -302,20 +307,11 @@ export class SimulationLoop {
     // Check if any component is failed
     state.score.survival = !state.components.some((c) => c.health === 'failed');
 
-    // End-to-end latency estimate: sum of the worst latency per component type
-    // (a request passes through at most one of each type)
-    const activeComponents = state.components.filter(
-      (c) => c.type !== 'client' && c.stats.requestsPerSecond > 0,
-    );
-    if (activeComponents.length > 0) {
-      const maxPerType = new Map<string, number>();
-      for (const c of activeComponents) {
-        const current = maxPerType.get(c.type) ?? 0;
-        if (c.stats.latencyMs > current) {
-          maxPerType.set(c.type, c.stats.latencyMs);
-        }
-      }
-      state.score.avgLatency = [...maxPerType.values()].reduce((sum, v) => sum + v, 0);
+    // Average round-trip latency from actual particle measurements
+    // Converted from simulation seconds to milliseconds for display
+    const completed = state.simulation.completedRequests;
+    if (completed > 0) {
+      state.score.avgLatency = (state.simulation.totalLatency / completed) * LATENCY_SCALE;
     }
   }
 

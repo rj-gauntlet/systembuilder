@@ -55,6 +55,7 @@ export interface Connection {
 
 export type ParticleStatus = 'flowing' | 'queued' | 'dropped';
 export type ParticleDirection = 'request' | 'response';
+export type ParticleKind = 'read' | 'write';
 
 export interface Particle {
   id: string;
@@ -62,10 +63,12 @@ export interface Particle {
   position: number;        // 0-1 along the connection path (always from→to)
   speed: number;
   direction: ParticleDirection; // request flows from→to, response flows to→from
+  kind: ParticleKind;          // read or write — affects cache/MQ/DB behavior
   stuckInComponent?: string;
   status: ParticleStatus;
   sourceComponentId: string;   // tracks origin for latency measurement
   createdAt: number;           // simulation time when spawned (for latency calc)
+  droppedAge?: number;         // ticks since dropped (for drop animation)
 }
 
 export interface Budget {
@@ -79,11 +82,12 @@ export type EventType =
   | 'ddos-attack'
   | 'node-failure'
   | 'viral-content'
+  | 'write-storm'
   | 'region-outage'
   | 'slow-query';
 
 export interface EventEffect {
-  type: 'multiply-traffic' | 'disable-component' | 'increase-latency' | 'flood-requests';
+  type: 'multiply-traffic' | 'disable-component' | 'increase-latency' | 'flood-requests' | 'write-storm';
   targetComponentType?: ComponentType;
   targetComponentId?: string;
   multiplier?: number;
@@ -116,6 +120,8 @@ export interface SimulationState {
   totalRequests: number;
   completedRequests: number; // round-trip: response received back at client
   droppedRequests: number;
+  totalLatency: number;      // sum of all round-trip latencies (for averaging)
+  maxLatency: number;        // worst single round-trip latency observed
 }
 
 export interface GameState {
@@ -127,6 +133,7 @@ export interface GameState {
   score: Score;
   simulation: SimulationState;
   levelId: string | null;
+  writeRatio: number; // current write ratio (can be modified by events)
 }
 
 // ============================================================
@@ -156,6 +163,7 @@ export interface LevelDefinition {
     monthlyBudget: number;
     expectedTraffic: string;
   };
+  writeRatio: number; // 0-1, fraction of requests that are writes
   scriptedEvents: ScriptedEvent[];
   randomEventPool: EventType[];
   optimalBenchmark: {

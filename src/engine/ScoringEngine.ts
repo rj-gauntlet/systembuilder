@@ -1,4 +1,5 @@
 import type { GameState, LevelDefinition, Score } from './types';
+import { LATENCY_SCALE } from './SimulationLoop';
 
 export class ScoringEngine {
   calculateScore(state: GameState, level: LevelDefinition): Score {
@@ -8,20 +9,10 @@ export class ScoringEngine {
     // Uptime: percentage of requests that completed the full round trip
     const uptime = total > 0 ? (completed / total) * 100 : 100;
 
-    // End-to-end latency: sum of worst latency per component type
-    const activeComponents = state.components.filter(
-      (c) => c.type !== 'client' && c.stats.requestsPerSecond > 0,
-    );
+    // Average round-trip latency from actual particle measurements
     let avgLatency = 0;
-    if (activeComponents.length > 0) {
-      const maxPerType = new Map<string, number>();
-      for (const c of activeComponents) {
-        const current = maxPerType.get(c.type) ?? 0;
-        if (c.stats.latencyMs > current) {
-          maxPerType.set(c.type, c.stats.latencyMs);
-        }
-      }
-      avgLatency = [...maxPerType.values()].reduce((sum, v) => sum + v, 0);
+    if (completed > 0) {
+      avgLatency = (state.simulation.totalLatency / completed) * LATENCY_SCALE;
     }
 
     // Cost efficiency: ratio of player cost to optimal cost

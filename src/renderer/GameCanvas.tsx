@@ -179,7 +179,7 @@ export function GameCanvas({ engine, onStateChange, inputHandlerRef, level }: Ga
 
       // Load level events if in level mode
       if (level) {
-        simLoopRef.current.loadLevel(level);
+        simLoopRef.current.loadLevel(level, engine.getState());
       }
 
       // Game loop — runs every frame

@@ -16,6 +16,7 @@ export class EventSystem {
   private scriptedComplete = false;
   private disabledByEvent: Map<string, string> = new Map(); // eventId → componentId
   private baseThroughputs: Map<string, number> = new Map(); // componentId → original throughputLimit
+  private baseWriteRatio: number | null = null;
 
   loadLevel(level: LevelDefinition): void {
     this.scriptedEvents = [...level.scriptedEvents];
@@ -95,13 +96,16 @@ export class EventSystem {
       }
     }
 
-    // Reset throughput to base before applying active effects
+    // Reset throughput and writeRatio to base before applying active effects
     for (const comp of state.components) {
       comp.stats.throughputLimit = this.baseThroughputs.get(comp.id) ?? comp.stats.throughputLimit;
     }
+    if (this.baseWriteRatio === null) {
+      this.baseWriteRatio = state.writeRatio;
+    }
+    state.writeRatio = this.baseWriteRatio;
 
     // Accumulate multipliers from all active effects, then apply once
-    // Latency: SimulationLoop already set load-based values, we just multiply on top
     const throughputMultipliers: Map<string, number> = new Map();
     const latencyMultipliers: Map<string, number> = new Map();
 
@@ -154,6 +158,11 @@ export class EventSystem {
             }
             break;
           }
+          case 'write-storm': {
+            // Temporarily push write ratio very high — caches become useless
+            state.writeRatio = Math.min(0.95, state.writeRatio + (effect.multiplier ?? 0.3));
+            break;
+          }
         }
       }
     }
@@ -204,6 +213,11 @@ export class EventSystem {
         description: 'Database queries are taking much longer than usual.',
         effects: [{ type: 'increase-latency', targetComponentType: 'database', multiplier: 4, durationMs: 12000 }],
       },
+      'write-storm': {
+        title: 'Write Storm!',
+        description: 'A massive burst of write operations is flooding your system. Caches can\'t help with writes.',
+        effects: [{ type: 'write-storm', multiplier: 0.35, durationMs: 15000 }],
+      },
     };
 
     const template = templates[type];
@@ -230,6 +244,7 @@ export class EventSystem {
     this.nextRandomTime = 0;
     this.disabledByEvent.clear();
     this.baseThroughputs.clear();
+    this.baseWriteRatio = null;
     nextEventId = 1;
   }
 }

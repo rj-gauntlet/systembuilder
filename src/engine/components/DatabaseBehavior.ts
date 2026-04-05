@@ -2,8 +2,8 @@ import type { Component, Particle } from '../types';
 import type { SimulationContext } from '../SimulationLoop';
 
 /**
- * Database: terminal component. Receives requests, sends responses back
- * on the same connection. Slow under load.
+ * Database: terminal component. Processes reads and writes.
+ * Writes are 1.5x slower than reads (persistence cost).
  */
 export function processDatabase(
   component: Component,
@@ -11,16 +11,20 @@ export function processDatabase(
   ctx: SimulationContext,
 ): void {
   if (particle.direction === 'request') {
-    // Process and send response back on the same connection
     ctx.removeParticle(particle.id);
 
     const conn = ctx.state.connections.find((c) => c.id === particle.connectionId);
     if (conn) {
+      // Writes are slower — persistence overhead
+      const speedMultiplier = particle.kind === 'write' ? 0.65 : 1;
+      const loadPenalty = 1 - component.load * 0.5;
+
       ctx.spawnParticle({
         connectionId: conn.id,
         position: 1,
-        speed: particle.speed * (1 - component.load * 0.5), // slower under load
+        speed: particle.speed * speedMultiplier * loadPenalty,
         direction: 'response',
+        kind: particle.kind,
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
@@ -32,7 +36,6 @@ export function processDatabase(
       component.stats.requestsPerSecond + 1,
     );
   } else {
-    // Responses shouldn't arrive at a DB — consume
     ctx.removeParticle(particle.id);
   }
 }

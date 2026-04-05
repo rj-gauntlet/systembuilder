@@ -2,9 +2,8 @@ import type { Component, Particle } from '../types';
 import type { SimulationContext } from '../SimulationLoop';
 
 /**
- * Message Queue: buffers incoming requests and drains them to downstream
- * at a steady rate. Smooths out traffic spikes. Sends an acknowledgement
- * response immediately (the producer doesn't wait for processing).
+ * Message Queue: buffers WRITE requests for async processing.
+ * Sends immediate ack for writes. READ requests pass through unchanged.
  */
 export function processMessageQueue(
   component: Component,
@@ -12,7 +11,31 @@ export function processMessageQueue(
   ctx: SimulationContext,
 ): void {
   if (particle.direction === 'request') {
-    // Immediately ack back to sender (async pattern)
+    if (particle.kind === 'read') {
+      // Reads pass through — MQ doesn't buffer reads
+      const outConns = ctx.getOutgoingConnections(component.id);
+      ctx.removeParticle(particle.id);
+      if (outConns.length > 0) {
+        const conn = outConns[Math.floor(Math.random() * outConns.length)];
+        ctx.spawnParticle({
+          connectionId: conn.id,
+          position: 0,
+          speed: particle.speed,
+          direction: 'request',
+          kind: particle.kind,
+          status: 'flowing',
+          sourceComponentId: particle.sourceComponentId,
+          createdAt: particle.createdAt,
+        });
+      }
+      component.stats.requestsPerSecond = Math.min(
+        component.stats.throughputLimit,
+        component.stats.requestsPerSecond + 1,
+      );
+      return;
+    }
+
+    // Write request — immediately ack back to sender
     const inConn = ctx.state.connections.find((c) => c.id === particle.connectionId);
     if (inConn) {
       ctx.spawnParticle({
@@ -20,21 +43,23 @@ export function processMessageQueue(
         position: 1,
         speed: particle.speed,
         direction: 'response',
+        kind: particle.kind,
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
       });
     }
 
-    // Forward to downstream consumer at a steady rate
+    // Forward write to downstream at buffered rate
     const outConns = ctx.getOutgoingConnections(component.id);
     if (outConns.length > 0) {
       const conn = outConns[Math.floor(Math.random() * outConns.length)];
       ctx.spawnParticle({
         connectionId: conn.id,
         position: 0,
-        speed: particle.speed * 0.7, // slightly slower — buffered delivery
+        speed: particle.speed * 0.7,
         direction: 'request',
+        kind: particle.kind,
         status: 'flowing',
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
@@ -43,11 +68,9 @@ export function processMessageQueue(
 
     ctx.removeParticle(particle.id);
 
-    // Track queue depth
     component.stats.queueDepth = ctx.state.particles.filter(
       (p) => p.stuckInComponent === component.id,
     ).length;
-
     component.stats.requestsPerSecond = Math.min(
       component.stats.throughputLimit,
       component.stats.requestsPerSecond + 1,

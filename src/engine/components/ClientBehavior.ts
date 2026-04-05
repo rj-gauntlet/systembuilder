@@ -11,11 +11,15 @@ export function processClient(
   ctx: SimulationContext,
 ): void {
   if (particle.direction === 'response') {
-    // Response completed the round trip — count it and consume
+    // Response completed the round trip — record latency and consume
+    const roundTripTime = ctx.simTime - particle.createdAt;
     ctx.state.simulation.completedRequests++;
+    ctx.state.simulation.totalLatency += roundTripTime;
+    if (roundTripTime > ctx.state.simulation.maxLatency) {
+      ctx.state.simulation.maxLatency = roundTripTime;
+    }
     ctx.removeParticle(particle.id);
   }
-  // Requests arriving at a client (shouldn't happen normally) — just consume
   if (particle.direction === 'request') {
     ctx.removeParticle(particle.id);
   }

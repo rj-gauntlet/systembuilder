@@ -3,11 +3,12 @@ import type { Score, LevelDefinition } from '../../engine/types';
 interface DebriefProps {
   score: Score;
   level: LevelDefinition;
+  maxLatencyMs: number;
   onRetry: () => void;
   onLevelSelect: () => void;
 }
 
-export function Debrief({ score, level, onRetry, onLevelSelect }: DebriefProps) {
+export function Debrief({ score, level, maxLatencyMs, onRetry, onLevelSelect }: DebriefProps) {
   const benchmark = level.optimalBenchmark;
 
   return (
@@ -43,6 +44,12 @@ export function Debrief({ score, level, onRetry, onLevelSelect }: DebriefProps) 
             value={`${score.avgLatency.toFixed(2)}ms`}
             benchmark={`${benchmark.avgLatency}ms`}
             good={score.avgLatency <= benchmark.avgLatency * 1.5}
+          />
+          <MetricRow
+            label="Max Latency (p99)"
+            value={`${maxLatencyMs.toFixed(2)}ms`}
+            benchmark=""
+            good={maxLatencyMs <= benchmark.avgLatency * 3}
           />
           <MetricRow
             label="Cost Efficiency"
