@@ -145,7 +145,7 @@ export class SimulationLoop {
 
         // Each particle represents multiple real requests
         // weight = throughput / visual_rate so the product = actual req/s
-        const weight = Math.max(1, Math.round(client.stats.throughputLimit / (spawnRate * 10)));
+        const weight = Math.max(1, Math.round(client.stats.throughputLimit / (spawnRate * 4)));
 
         const conn = outConns[Math.floor(Math.random() * outConns.length)];
         const kind = Math.random() < ctx.state.writeRatio ? 'write' as const : 'read' as const;

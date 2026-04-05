@@ -6,7 +6,7 @@ export const COMPONENT_DEFS: Record<ComponentType, ComponentDefinition> = {
     name: 'Client',
     description: 'Generates user requests. The source of all traffic in the system.',
     monthlyCost: 0,
-    throughputLimit: 1000,
+    throughputLimit: 500,
     ports: [
       { side: 'right', count: 2 },
     ],
