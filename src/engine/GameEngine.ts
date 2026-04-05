@@ -28,7 +28,7 @@ function createDefaultScore(): Score {
 }
 
 function createDefaultSimulation(): SimulationState {
-  return { status: 'building', elapsedTime: 0, totalRequests: 0, droppedRequests: 0 };
+  return { status: 'building', elapsedTime: 0, totalRequests: 0, completedRequests: 0, droppedRequests: 0 };
 }
 
 export class GameEngine {
@@ -180,27 +180,13 @@ export class GameEngine {
 
   /** Returns true if from/to should be swapped to get natural traffic flow direction */
   private shouldSwapDirection(from: Component, to: Component): boolean {
-    // Component type priority (lower = more "upstream" / source-like)
-    const priority: Record<string, number> = {
-      client: 0,
-      cdn: 1,
-      'rate-limiter': 2,
-      'load-balancer': 3,
-      server: 4,
-      cache: 5,
-      'message-queue': 6,
-      database: 7,
-    };
+    // Fixed roles: Client is always source, Database is always sink
+    if (from.type === 'database' && to.type !== 'database') return true;
+    if (to.type === 'client') return true;
+    if (from.type === 'client' || to.type === 'database') return false;
 
-    const fromPri = priority[from.type] ?? 4;
-    const toPri = priority[to.type] ?? 4;
-
-    // If types differ in priority, higher priority (lower number) should be "from"
-    if (fromPri !== toPri) {
-      return fromPri > toPri; // swap if "from" is more downstream than "to"
-    }
-
-    // Same priority — use spatial position (left-to-right, then top-to-bottom)
+    // Everything else: use spatial position (left-to-right, then top-to-bottom)
+    // The user's grid placement reflects their intended traffic flow
     if (from.position.col !== to.position.col) {
       return from.position.col > to.position.col;
     }

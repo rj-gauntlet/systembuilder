@@ -1,5 +1,6 @@
 import type { Component, Particle } from '../types';
 import type { SimulationContext } from '../SimulationLoop';
+import { getHealthyIncoming } from './routeUtils';
 
 const BASE_HIT_RATE = 0.7; // 70% cache hit rate
 
@@ -63,7 +64,7 @@ export function processCache(
   } else {
     // Response from downstream (DB) — forward back upstream
     ctx.removeParticle(particle.id);
-    const inConns = ctx.getIncomingConnections(component.id);
+    const inConns = getHealthyIncoming(component.id, ctx);
     if (inConns.length > 0) {
       const conn = inConns[Math.floor(Math.random() * inConns.length)];
       ctx.spawnParticle({

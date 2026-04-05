@@ -1,5 +1,6 @@
 import type { Component, Particle } from '../types';
 import type { SimulationContext } from '../SimulationLoop';
+import { getHealthyIncoming } from './routeUtils';
 
 /**
  * Rate Limiter: allows requests through up to throughput limit.
@@ -58,7 +59,7 @@ export function processRateLimiter(
   } else {
     // Response — pass through back upstream
     ctx.removeParticle(particle.id);
-    const inConns = ctx.getIncomingConnections(component.id);
+    const inConns = getHealthyIncoming(component.id, ctx);
     if (inConns.length > 0) {
       const conn = inConns[Math.floor(Math.random() * inConns.length)];
       ctx.spawnParticle({

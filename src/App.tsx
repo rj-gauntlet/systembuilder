@@ -14,11 +14,12 @@ type Screen =
   | { type: 'game-sandbox' }
   | { type: 'debrief'; level: LevelDefinition; score: Score };
 
-const store = new ProgressStore();
+function getStore() { return new ProgressStore(); }
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ type: 'menu' });
   const [gameKey, setGameKey] = useState(0);
+  const store = getStore();
 
   function handleLevelComplete(level: LevelDefinition, score: Score) {
     store.saveLevelResult(level.id, score);

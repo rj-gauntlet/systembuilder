@@ -1,5 +1,6 @@
 import type { Component, Particle } from '../types';
 import type { SimulationContext } from '../SimulationLoop';
+import { getHealthyIncoming } from './routeUtils';
 
 /**
  * Load Balancer: distributes requests round-robin across outgoing connections.
@@ -14,15 +15,22 @@ export function processLoadBalancer(
 ): void {
   if (particle.direction === 'request') {
     const outConns = ctx.getOutgoingConnections(component.id);
-    if (outConns.length === 0) {
-      // No downstream — drop
+
+    // Filter out connections to failed components
+    const healthyConns = outConns.filter((c) => {
+      const target = ctx.state.components.find((comp) => comp.id === c.toComponentId);
+      return target && target.health !== 'failed';
+    });
+
+    if (healthyConns.length === 0) {
+      // No healthy downstream — drop
       particle.status = 'dropped';
       ctx.state.simulation.droppedRequests++;
       return;
     }
 
-    // Round-robin distribution
-    const conn = outConns[roundRobinIndex % outConns.length];
+    // Round-robin across healthy targets only
+    const conn = healthyConns[roundRobinIndex % healthyConns.length];
     roundRobinIndex++;
 
     ctx.removeParticle(particle.id);
@@ -43,7 +51,7 @@ export function processLoadBalancer(
   } else {
     // Response — forward back upstream
     ctx.removeParticle(particle.id);
-    const inConns = ctx.getIncomingConnections(component.id);
+    const inConns = getHealthyIncoming(component.id, ctx);
     if (inConns.length > 0) {
       const conn = inConns[Math.floor(Math.random() * inConns.length)];
       ctx.spawnParticle({

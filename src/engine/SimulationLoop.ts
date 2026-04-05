@@ -27,6 +27,8 @@ export class SimulationLoop {
   private eventSystem = new EventSystem();
   private scoringEngine = new ScoringEngine();
   private level: LevelDefinition | null = null;
+  private drainStartTime = 0;
+  private static readonly DRAIN_DURATION = 5; // seconds
 
   loadLevel(level: LevelDefinition): void {
     this.level = level;
@@ -34,7 +36,7 @@ export class SimulationLoop {
   }
 
   tick(state: GameState, deltaMs: number): void {
-    if (state.simulation.status !== 'running') return;
+    if (state.simulation.status !== 'running' && state.simulation.status !== 'draining') return;
 
     this.accumulator += deltaMs / 1000;
 
@@ -48,29 +50,51 @@ export class SimulationLoop {
 
   private step(state: GameState): void {
     const ctx = this.createContext(state);
+    const isDraining = state.simulation.status === 'draining';
 
-    // 1. Fire events
-    this.eventSystem.update(state);
+    // 1. Spawn request particles from clients (skip during drain)
+    if (!isDraining) {
+      this.spawnClientRequests(ctx);
+    }
 
-    // 2. Spawn request particles from clients
-    this.spawnClientRequests(ctx);
-
-    // 3. Move flowing particles along connections
+    // 2. Move flowing particles along connections
     this.moveParticles(ctx);
 
-    // 4. Process arrived particles through component behaviors
+    // 3. Process arrived particles through component behaviors
     this.processArrivedParticles(ctx);
 
-    // 5. Update component stats and health
+    // 4. Update component stats and health (sets load-based latency)
     this.updateComponentStats(ctx);
+
+    // 5. Apply events (multiplies on top of load-based stats)
+    this.eventSystem.update(state);
 
     // 6. Update score
     this.updateScore(state);
 
-    // 7. Check if simulation duration is complete
-    if (this.level && state.simulation.elapsedTime >= this.level.simulationDuration) {
-      state.simulation.status = 'complete';
-      state.score = this.scoringEngine.calculateScore(state, this.level);
+    // 7. Check if simulation duration is reached — enter drain phase
+    if (!isDraining && this.level && state.simulation.elapsedTime >= this.level.simulationDuration) {
+      state.simulation.status = 'draining';
+      this.drainStartTime = this.simTime;
+    }
+
+    // 8. Check if drain phase is complete
+    if (isDraining) {
+      const drainElapsed = this.simTime - this.drainStartTime;
+      const particlesInFlight = state.particles.length;
+
+      // Complete when all particles resolved OR drain timeout reached
+      if (particlesInFlight === 0 || drainElapsed >= SimulationLoop.DRAIN_DURATION) {
+        // Count remaining in-flight particles as dropped
+        if (particlesInFlight > 0) {
+          state.simulation.droppedRequests += particlesInFlight;
+          state.particles = [];
+        }
+        state.simulation.status = 'complete';
+        if (this.level) {
+          state.score = this.scoringEngine.calculateScore(state, this.level);
+        }
+      }
     }
   }
 
@@ -157,9 +181,16 @@ export class SimulationLoop {
         }
       } else if (particle.direction === 'response' && particle.position <= 0) {
         particle.position = 0;
-        particle.status = 'queued';
         const conn = ctx.state.connections.find((c) => c.id === particle.connectionId);
         if (conn) {
+          // Check if the destination component is failed — drop the response
+          const dest = ctx.state.components.find((c) => c.id === conn.fromComponentId);
+          if (dest && dest.health === 'failed') {
+            particle.status = 'dropped';
+            ctx.state.simulation.droppedRequests++;
+            continue;
+          }
+          particle.status = 'queued';
           particle.stuckInComponent = conn.fromComponentId;
         }
       }
@@ -250,7 +281,7 @@ export class SimulationLoop {
       }
 
       // Update latency based on load
-      component.stats.latencyMs = def.defaultLatencyMs * (1 + component.load * 3);
+      component.stats.latencyMs = def.defaultLatencyMs * (1 + component.load * 1.5);
     }
   }
 
@@ -258,8 +289,7 @@ export class SimulationLoop {
     const total = state.simulation.totalRequests;
     if (total === 0) return;
 
-    const dropped = state.simulation.droppedRequests;
-    state.score.uptime = ((total - dropped) / total) * 100;
+    state.score.uptime = (state.simulation.completedRequests / total) * 100;
 
     // Cost efficiency: ratio of budget used
     if (state.budget.monthlyLimit > 0) {
@@ -272,13 +302,20 @@ export class SimulationLoop {
     // Check if any component is failed
     state.score.survival = !state.components.some((c) => c.health === 'failed');
 
-    // Avg latency from component stats
+    // End-to-end latency estimate: sum of the worst latency per component type
+    // (a request passes through at most one of each type)
     const activeComponents = state.components.filter(
       (c) => c.type !== 'client' && c.stats.requestsPerSecond > 0,
     );
     if (activeComponents.length > 0) {
-      state.score.avgLatency =
-        activeComponents.reduce((sum, c) => sum + c.stats.latencyMs, 0) / activeComponents.length;
+      const maxPerType = new Map<string, number>();
+      for (const c of activeComponents) {
+        const current = maxPerType.get(c.type) ?? 0;
+        if (c.stats.latencyMs > current) {
+          maxPerType.set(c.type, c.stats.latencyMs);
+        }
+      }
+      state.score.avgLatency = [...maxPerType.values()].reduce((sum, v) => sum + v, 0);
     }
   }
 

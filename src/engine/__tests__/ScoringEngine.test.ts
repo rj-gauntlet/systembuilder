@@ -13,6 +13,7 @@ describe('ScoringEngine', () => {
 
     const state = engine.getState();
     state.simulation.totalRequests = 1000;
+    state.simulation.completedRequests = 995;
     state.simulation.droppedRequests = 5;
     state.budget.monthlySpent = 150;
     server.stats.requestsPerSecond = 100;
@@ -31,6 +32,7 @@ describe('ScoringEngine', () => {
 
     const state = engine.getState();
     state.simulation.totalRequests = 100;
+    state.simulation.completedRequests = 20;
     state.simulation.droppedRequests = 80;
     state.budget.monthlySpent = 500;
     server.stats.requestsPerSecond = 10;
@@ -44,6 +46,7 @@ describe('ScoringEngine', () => {
     const engine = new GameEngine(300);
     const state = engine.getState();
     state.simulation.totalRequests = 200;
+    state.simulation.completedRequests = 180;
     state.simulation.droppedRequests = 20;
 
     const score = scorer.calculateScore(state, urlShortener);

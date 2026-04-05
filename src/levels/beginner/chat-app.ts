@@ -51,15 +51,15 @@ export const chatApp: LevelDefinition = {
   ],
   randomEventPool: ['traffic-spike', 'ddos-attack', 'node-failure'],
   optimalBenchmark: {
-    uptime: 98,
-    avgLatency: 25,
-    monthlyCost: 230,
+    uptime: 90,
+    avgLatency: 90,
+    monthlyCost: 260, // Client, Rate Limiter, LB, Server x2, MQ, Database
     componentCount: 7,
   },
   starThresholds: {
-    oneStar: { minUptime: 70, maxLatency: 300, maxCostRatio: 300, mustSurvive: false },
-    twoStar: { minUptime: 85, maxLatency: 150, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 95, maxLatency: 60, maxCostRatio: 160, mustSurvive: true },
+    oneStar: { minUptime: 35, maxLatency: 500, maxCostRatio: 300, mustSurvive: false },
+    twoStar: { minUptime: 55, maxLatency: 250, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 75, maxLatency: 150, maxCostRatio: 175, mustSurvive: true },
   },
   simulationDuration: 90,
 };

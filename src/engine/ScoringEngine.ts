@@ -3,19 +3,26 @@ import type { GameState, LevelDefinition, Score } from './types';
 export class ScoringEngine {
   calculateScore(state: GameState, level: LevelDefinition): Score {
     const total = state.simulation.totalRequests;
-    const dropped = state.simulation.droppedRequests;
+    const completed = state.simulation.completedRequests;
 
-    // Uptime: percentage of requests successfully processed
-    const uptime = total > 0 ? ((total - dropped) / total) * 100 : 100;
+    // Uptime: percentage of requests that completed the full round trip
+    const uptime = total > 0 ? (completed / total) * 100 : 100;
 
-    // Average latency across active components
+    // End-to-end latency: sum of worst latency per component type
     const activeComponents = state.components.filter(
       (c) => c.type !== 'client' && c.stats.requestsPerSecond > 0,
     );
-    const avgLatency =
-      activeComponents.length > 0
-        ? activeComponents.reduce((sum, c) => sum + c.stats.latencyMs, 0) / activeComponents.length
-        : 0;
+    let avgLatency = 0;
+    if (activeComponents.length > 0) {
+      const maxPerType = new Map<string, number>();
+      for (const c of activeComponents) {
+        const current = maxPerType.get(c.type) ?? 0;
+        if (c.stats.latencyMs > current) {
+          maxPerType.set(c.type, c.stats.latencyMs);
+        }
+      }
+      avgLatency = [...maxPerType.values()].reduce((sum, v) => sum + v, 0);
+    }
 
     // Cost efficiency: ratio of player cost to optimal cost
     const costEfficiency =

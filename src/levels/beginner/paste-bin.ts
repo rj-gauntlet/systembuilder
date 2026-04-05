@@ -43,15 +43,15 @@ export const pasteBin: LevelDefinition = {
   ],
   randomEventPool: ['traffic-spike', 'viral-content', 'slow-query'],
   optimalBenchmark: {
-    uptime: 99,
-    avgLatency: 35,
-    monthlyCost: 175,
-    componentCount: 6,
+    uptime: 95,
+    avgLatency: 70,
+    monthlyCost: 175, // Client, CDN, Server, Cache, Database
+    componentCount: 5,
   },
   starThresholds: {
-    oneStar: { minUptime: 75, maxLatency: 250, maxCostRatio: 300, mustSurvive: false },
-    twoStar: { minUptime: 90, maxLatency: 120, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 97, maxLatency: 60, maxCostRatio: 150, mustSurvive: true },
+    oneStar: { minUptime: 40, maxLatency: 500, maxCostRatio: 300, mustSurvive: false },
+    twoStar: { minUptime: 65, maxLatency: 250, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 80, maxLatency: 150, maxCostRatio: 175, mustSurvive: true },
   },
   simulationDuration: 90,
 };

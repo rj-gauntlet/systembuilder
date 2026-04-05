@@ -2,6 +2,10 @@ import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import type { Component } from '../engine/types';
 import { GRID_CELL_SIZE } from '../engine/componentDefs';
 
+function r2(n: number): string {
+  return n.toFixed(2);
+}
+
 const OVERLAY_WIDTH = 70;
 const OVERLAY_HEIGHT = 36;
 
@@ -35,14 +39,14 @@ export class StatOverlay {
     const stats = component.stats;
     const lines: string[] = [];
 
-    lines.push(`${Math.round(stats.requestsPerSecond)} req/s`);
+    lines.push(`${r2(stats.requestsPerSecond)} req/s`);
 
     if (stats.hitRate !== undefined) {
-      lines.push(`hit: ${Math.round(stats.hitRate * 100)}%`);
+      lines.push(`hit: ${r2(stats.hitRate * 100)}%`);
     } else if (stats.queueDepth !== undefined) {
       lines.push(`q: ${stats.queueDepth}`);
     } else {
-      lines.push(`${Math.round(stats.latencyMs)}ms`);
+      lines.push(`${r2(stats.latencyMs)}ms`);
     }
 
     this.text.text = lines.join('\n');

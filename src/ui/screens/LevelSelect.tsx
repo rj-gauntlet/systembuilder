@@ -8,9 +8,9 @@ interface LevelSelectProps {
 }
 
 const loader = new LevelLoader();
-const store = new ProgressStore();
 
 export function LevelSelect({ onSelectLevel, onBack }: LevelSelectProps) {
+  const store = new ProgressStore();
   const progress = store.getProgress();
   const tiers = ['beginner', 'intermediate', 'advanced'] as const;
 

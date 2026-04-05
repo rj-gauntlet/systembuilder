@@ -108,12 +108,13 @@ export interface Score {
   stars: 0 | 1 | 2 | 3;
 }
 
-export type SimulationStatus = 'building' | 'running' | 'paused' | 'complete';
+export type SimulationStatus = 'building' | 'running' | 'paused' | 'draining' | 'complete';
 
 export interface SimulationState {
   status: SimulationStatus;
   elapsedTime: number;
   totalRequests: number;
+  completedRequests: number; // round-trip: response received back at client
   droppedRequests: number;
 }
 

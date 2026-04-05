@@ -41,15 +41,15 @@ export const urlShortener: LevelDefinition = {
   ],
   randomEventPool: ['traffic-spike', 'slow-query'],
   optimalBenchmark: {
-    uptime: 99.5,
-    avgLatency: 30,
-    monthlyCost: 155,
-    componentCount: 5,
+    uptime: 95,
+    avgLatency: 80,
+    monthlyCost: 235,
+    componentCount: 6, // Client, Cache, LB, Server x2, Database
   },
   starThresholds: {
-    oneStar: { minUptime: 80, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
-    twoStar: { minUptime: 92, maxLatency: 100, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 98, maxLatency: 50, maxCostRatio: 150, mustSurvive: true },
+    oneStar: { minUptime: 40, maxLatency: 500, maxCostRatio: 300, mustSurvive: false },
+    twoStar: { minUptime: 65, maxLatency: 250, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 80, maxLatency: 150, maxCostRatio: 175, mustSurvive: true },
   },
   simulationDuration: 90,
 };

@@ -34,19 +34,19 @@ export function Debrief({ score, level, onRetry, onLevelSelect }: DebriefProps) 
         <div style={styles.metricsGrid}>
           <MetricRow
             label="Uptime"
-            value={`${score.uptime.toFixed(1)}%`}
+            value={`${score.uptime.toFixed(2)}%`}
             benchmark={`${benchmark.uptime}%`}
             good={score.uptime >= benchmark.uptime * 0.95}
           />
           <MetricRow
             label="Avg Latency"
-            value={`${Math.round(score.avgLatency)}ms`}
+            value={`${score.avgLatency.toFixed(2)}ms`}
             benchmark={`${benchmark.avgLatency}ms`}
             good={score.avgLatency <= benchmark.avgLatency * 1.5}
           />
           <MetricRow
             label="Cost Efficiency"
-            value={`${score.costEfficiency.toFixed(0)}%`}
+            value={`${score.costEfficiency.toFixed(2)}%`}
             benchmark="100%"
             good={score.costEfficiency <= 150}
           />

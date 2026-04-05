@@ -14,6 +14,8 @@ export class EventSystem {
   private randomPool: EventType[] = [];
   private nextRandomTime = 0;
   private scriptedComplete = false;
+  private disabledByEvent: Map<string, string> = new Map(); // eventId → componentId
+  private baseThroughputs: Map<string, number> = new Map(); // componentId → original throughputLimit
 
   loadLevel(level: LevelDefinition): void {
     this.scriptedEvents = [...level.scriptedEvents];
@@ -68,6 +70,16 @@ export class EventSystem {
       event.timeRemaining -= 1 / 60; // assuming 60fps tick
       if (event.timeRemaining <= 0) {
         event.active = false;
+
+        // Restore components disabled by this event
+        const disabledId = this.disabledByEvent.get(event.id);
+        if (disabledId) {
+          const comp = state.components.find((c) => c.id === disabledId);
+          if (comp && comp.health === 'failed') {
+            comp.health = 'healthy';
+          }
+          this.disabledByEvent.delete(event.id);
+        }
       }
     }
 
@@ -76,35 +88,58 @@ export class EventSystem {
   }
 
   private applyEffects(state: GameState): void {
-    // Reset any event-modified state first
-    // (effects are re-applied each tick while active)
+    // Snapshot base throughput on first call (events modify it, need to reset each tick)
+    for (const comp of state.components) {
+      if (!this.baseThroughputs.has(comp.id)) {
+        this.baseThroughputs.set(comp.id, comp.stats.throughputLimit);
+      }
+    }
+
+    // Reset throughput to base before applying active effects
+    for (const comp of state.components) {
+      comp.stats.throughputLimit = this.baseThroughputs.get(comp.id) ?? comp.stats.throughputLimit;
+    }
+
+    // Accumulate multipliers from all active effects, then apply once
+    // Latency: SimulationLoop already set load-based values, we just multiply on top
+    const throughputMultipliers: Map<string, number> = new Map();
+    const latencyMultipliers: Map<string, number> = new Map();
+
     for (const event of state.events) {
       if (!event.active) continue;
 
       for (const effect of event.effects) {
         switch (effect.type) {
-          case 'multiply-traffic': {
-            // Increase client throughput temporarily
+          case 'multiply-traffic':
+          case 'flood-requests': {
             const clients = state.components.filter((c) => c.type === 'client');
             for (const client of clients) {
-              client.stats.throughputLimit = Math.round(
-                client.stats.throughputLimit * (effect.multiplier ?? 2),
-              );
+              const current = throughputMultipliers.get(client.id) ?? 1;
+              throughputMultipliers.set(client.id, current * (effect.multiplier ?? 2));
             }
             break;
           }
           case 'disable-component': {
-            if (effect.targetComponentId) {
-              const comp = state.components.find((c) => c.id === effect.targetComponentId);
+            // Lock target on first tick — don't re-roll each tick
+            const alreadyTargeted = this.disabledByEvent.get(event.id);
+            if (alreadyTargeted) {
+              // Keep the already-targeted component failed
+              const comp = state.components.find((c) => c.id === alreadyTargeted);
               if (comp) comp.health = 'failed';
+            } else if (effect.targetComponentId) {
+              const comp = state.components.find((c) => c.id === effect.targetComponentId);
+              if (comp) {
+                comp.health = 'failed';
+                this.disabledByEvent.set(event.id, comp.id);
+              }
             } else if (effect.targetComponentType) {
-              // Disable a random component of this type
               const candidates = state.components.filter(
                 (c) => c.type === effect.targetComponentType && c.health !== 'failed',
               );
               if (candidates.length > 0) {
                 const target = candidates[Math.floor(Math.random() * candidates.length)];
                 target.health = 'failed';
+                this.disabledByEvent.set(event.id, target.id);
               }
             }
             break;
@@ -114,21 +149,25 @@ export class EventSystem {
               ? state.components.filter((c) => c.type === effect.targetComponentType)
               : state.components;
             for (const comp of targets) {
-              comp.stats.latencyMs *= effect.multiplier ?? 3;
-            }
-            break;
-          }
-          case 'flood-requests': {
-            // Handled by multiply-traffic on clients — flood is a more extreme version
-            const clients = state.components.filter((c) => c.type === 'client');
-            for (const client of clients) {
-              client.stats.throughputLimit = Math.round(
-                client.stats.throughputLimit * (effect.multiplier ?? 5),
-              );
+              const current = latencyMultipliers.get(comp.id) ?? 1;
+              latencyMultipliers.set(comp.id, current * (effect.multiplier ?? 3));
             }
             break;
           }
         }
+      }
+    }
+
+    // Apply accumulated multipliers from base values (not compounding)
+    for (const comp of state.components) {
+      const tm = throughputMultipliers.get(comp.id);
+      if (tm) {
+        const base = this.baseThroughputs.get(comp.id) ?? comp.stats.throughputLimit;
+        comp.stats.throughputLimit = Math.round(base * tm);
+      }
+      const lm = latencyMultipliers.get(comp.id);
+      if (lm) {
+        comp.stats.latencyMs *= lm;
       }
     }
   }
@@ -189,6 +228,8 @@ export class EventSystem {
     this.randomPool = [];
     this.scriptedComplete = false;
     this.nextRandomTime = 0;
+    this.disabledByEvent.clear();
+    this.baseThroughputs.clear();
     nextEventId = 1;
   }
 }

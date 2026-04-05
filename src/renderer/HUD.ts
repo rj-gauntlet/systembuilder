@@ -123,8 +123,8 @@ export class HUD {
     this.budgetBar.fill({ color: barColor });
 
     // Stats
-    this.uptimeValue.text = `${state.score.uptime.toFixed(1)}%`;
-    this.latencyValue.text = `${Math.round(state.score.avgLatency)}ms`;
+    this.uptimeValue.text = `${state.score.uptime.toFixed(2)}%`;
+    this.latencyValue.text = `${state.score.avgLatency.toFixed(2)}ms`;
     this.requestsValue.text = `${state.simulation.totalRequests}`;
 
     // Active events

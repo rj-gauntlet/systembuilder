@@ -57,6 +57,8 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
     inputRef.current?.setConnectMode();
   }, []);
 
+  const [showBriefing, setShowBriefing] = useState(false);
+
   const state = engine.getState();
   const simStatus = state.simulation.status;
   const isEditable = simStatus === 'building' || simStatus === 'paused';
@@ -69,8 +71,18 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
         </h2>
         <div style={styles.simControls}>
           {level && (
+            <button
+              style={styles.briefingButton}
+              onClick={() => setShowBriefing(!showBriefing)}
+            >
+              {showBriefing ? 'Hide' : 'Objectives'}
+            </button>
+          )}
+          {level && (
             <span style={styles.timer}>
-              {Math.max(0, Math.round((level.simulationDuration) - state.simulation.elapsedTime))}s
+              {simStatus === 'draining'
+                ? 'Draining...'
+                : `${Math.max(0, Math.round(level.simulationDuration - state.simulation.elapsedTime))}s`}
             </span>
           )}
           {simStatus === 'building' && (
@@ -95,6 +107,21 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
           )}
         </div>
       </div>
+      {showBriefing && level && (
+        <div style={styles.briefingPanel}>
+          <div style={styles.briefingContent}>
+            <strong>{level.briefing.system}</strong> — {level.briefing.description}
+            <ul style={styles.objectiveList}>
+              {level.briefing.objectives.map((obj, i) => (
+                <li key={i}>{obj}</li>
+              ))}
+            </ul>
+            <span style={styles.briefingMeta}>
+              Budget: ${level.briefing.monthlyBudget}/mo · Traffic: {level.briefing.expectedTraffic} · Duration: {level.simulationDuration}s
+            </span>
+          </div>
+        </div>
+      )}
       <div style={styles.main}>
         <Toolbox
           onSelectComponent={handleSelectComponent}
@@ -184,6 +211,38 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     fontSize: 13,
+  },
+  briefingButton: {
+    padding: '6px 12px',
+    border: '1px solid #334155',
+    borderRadius: 6,
+    background: '#1e293b',
+    color: '#60a5fa',
+    fontWeight: 600,
+    cursor: 'pointer',
+    fontSize: 12,
+  },
+  briefingPanel: {
+    background: '#16162a',
+    borderBottom: '1px solid #333',
+    padding: '10px 16px',
+  },
+  briefingContent: {
+    fontSize: 12,
+    color: '#94a3b8',
+    lineHeight: '1.5',
+    maxWidth: 800,
+  },
+  objectiveList: {
+    margin: '6px 0',
+    paddingLeft: 20,
+    fontSize: 12,
+    color: '#cbd5e1',
+  },
+  briefingMeta: {
+    fontSize: 11,
+    color: '#64748b',
+    fontFamily: 'monospace',
   },
   main: {
     display: 'flex',

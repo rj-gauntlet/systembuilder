@@ -11,7 +11,8 @@ export function processClient(
   ctx: SimulationContext,
 ): void {
   if (particle.direction === 'response') {
-    // Response arrived back at client — record latency and consume
+    // Response completed the round trip — count it and consume
+    ctx.state.simulation.completedRequests++;
     ctx.removeParticle(particle.id);
   }
   // Requests arriving at a client (shouldn't happen normally) — just consume

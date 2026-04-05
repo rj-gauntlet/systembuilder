@@ -1,5 +1,6 @@
 import type { Component, Particle } from '../types';
 import type { SimulationContext } from '../SimulationLoop';
+import { getHealthyIncoming } from './routeUtils';
 
 /**
  * Server: processes requests, forwards to downstream or sends response back.
@@ -50,9 +51,8 @@ export function processServer(
   } else {
     // Response coming back from downstream — forward back upstream
     ctx.removeParticle(particle.id);
-    const inConns = ctx.getIncomingConnections(component.id);
+    const inConns = getHealthyIncoming(component.id, ctx);
     if (inConns.length > 0) {
-      // Send response back on an incoming connection (toward the client)
       const conn = inConns[Math.floor(Math.random() * inConns.length)];
       ctx.spawnParticle({
         connectionId: conn.id,
