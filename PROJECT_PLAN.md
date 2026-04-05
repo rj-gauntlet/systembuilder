@@ -693,17 +693,17 @@ systembuilder/
 **Goal:** Chat assistant with game state context, algorithmic hint system, and the bridge between them.
 
 **Deliverables:**
-- [ ] `AIProvider` interface + `OpenAIProvider` implementation
-- [ ] Cloudflare Worker proxy for OpenAI API calls (`/worker/`)
-- [ ] Game state serializer — compact JSON snapshot for AI context
-- [ ] System prompt for chat assistant (system design tutor persona with game awareness)
-- [ ] Chat panel UI (React) — message history, input, send button
-- [ ] Hint rules engine — `HintEngine.ts` with rule evaluation and random variant selection
-- [ ] 40-60 hint rules across all 8 component types (8 variants each)
-- [ ] Hint toast notifications on canvas with "Ask about this" button
-- [ ] "Ask about this" flow — hint context pre-filled into chat panel
-- [ ] User API key fallback — settings page option to provide own OpenAI key
-- [ ] Rate limiting — 50 chat messages per day per user (localStorage tracked)
+- [x] `AIProvider` interface + `OpenAIProvider` implementation
+- [x] Cloudflare Worker proxy for OpenAI API calls (`/worker/`)
+- [x] Game state serializer — compact JSON snapshot for AI context
+- [x] System prompt for chat assistant (system design tutor persona with game awareness)
+- [x] Chat panel UI (React) — message history, input, send button
+- [x] Hint rules engine — `HintEngine.ts` with rule evaluation and random variant selection
+- [x] 40-60 hint rules across all 8 component types (8 variants each)
+- [x] Hint toast notifications on canvas with "Ask about this" button
+- [x] "Ask about this" flow — hint context pre-filled into chat panel
+- [x] User API key fallback — settings page option to provide own OpenAI key
+- [x] Rate limiting — 50 chat messages per day per user (localStorage tracked)
 
 **Key Tasks:**
 1. Implement `AIProvider` interface and `OpenAIProvider` class
@@ -744,15 +744,15 @@ systembuilder/
 **Goal:** Complete game shell, tutorial, and visual polish to make it feel like a real product.
 
 **Deliverables:**
-- [ ] Main menu screen with game title, start button, settings
-- [ ] Interactive tutorial for first level — guided walkthrough of canvas, toolbox, connections, simulation
-- [ ] Toolbox sidebar — component list with icons, names, descriptions, monthly costs
+- [x] Main menu screen with game title, start button, settings
+- [x] Interactive tutorial for first level — guided walkthrough of canvas, toolbox, connections, simulation
+- [x] Toolbox sidebar — component list with icons, names, descriptions, monthly costs
 - [ ] Component drag interaction from toolbox to canvas
-- [ ] Component icons/sprites for all 8 types
-- [ ] Visual polish — animations, transitions, color palette, typography
+- [x] Component icons/sprites for all 8 types
+- [x] Visual polish — animations, transitions, color palette, typography
 - [ ] Sound effects (optional) — placement, connection, simulation start, event alerts, scoring
-- [ ] Settings screen — hints toggle, sound toggle, API key input
-- [ ] Responsive layout adjustments for common desktop resolutions
+- [x] Settings screen — hints toggle, sound toggle, API key input
+- [x] Responsive layout adjustments for common desktop resolutions
 
 **Key Tasks:**
 1. Design and build main menu screen
