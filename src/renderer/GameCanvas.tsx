@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, type MutableRefObject } from 'react';
 import { Application, Container } from 'pixi.js';
 import type { GameEngine } from '../engine/GameEngine';
+import type { LevelDefinition } from '../engine/types';
 import { SimulationLoop } from '../engine/SimulationLoop';
 import { GridSystem } from './GridSystem';
 import { ComponentSprite } from './ComponentSprite';
@@ -14,9 +15,10 @@ interface GameCanvasProps {
   engine: GameEngine;
   onStateChange: () => void;
   inputHandlerRef?: MutableRefObject<InputHandler | null>;
+  level?: LevelDefinition;
 }
 
-export function GameCanvas({ engine, onStateChange, inputHandlerRef }: GameCanvasProps) {
+export function GameCanvas({ engine, onStateChange, inputHandlerRef, level }: GameCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
   const inputRef = useRef<InputHandler | null>(null);
@@ -175,6 +177,11 @@ export function GameCanvas({ engine, onStateChange, inputHandlerRef }: GameCanva
       inputRef.current = input;
       if (inputHandlerRef) inputHandlerRef.current = input;
 
+      // Load level events if in level mode
+      if (level) {
+        simLoopRef.current.loadLevel(level);
+      }
+
       // Game loop — runs every frame
       let lastTime = performance.now();
       app.ticker.add(() => {
@@ -204,5 +211,11 @@ export function GameCanvas({ engine, onStateChange, inputHandlerRef }: GameCanva
     };
   }, [engine, syncVisuals, inputHandlerRef]);
 
-  return <div ref={containerRef} style={{ border: '1px solid #333', borderRadius: 8 }} />;
+  return (
+    <div
+      ref={containerRef}
+      onContextMenu={(e) => e.preventDefault()}
+      style={{ border: '1px solid #333', borderRadius: 8 }}
+    />
+  );
 }

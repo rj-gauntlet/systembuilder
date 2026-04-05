@@ -9,7 +9,6 @@ export const COMPONENT_DEFS: Record<ComponentType, ComponentDefinition> = {
     throughputLimit: 1000,
     ports: [
       { side: 'right', count: 2 },
-      { side: 'bottom', count: 1 },
     ],
     defaultLatencyMs: 0,
   },
@@ -34,7 +33,7 @@ export const COMPONENT_DEFS: Record<ComponentType, ComponentDefinition> = {
     monthlyCost: 30,
     throughputLimit: 500,
     ports: [
-      { side: 'left', count: 2 },
+      { side: 'left', count: 4 },
       { side: 'right', count: 4 },
     ],
     defaultLatencyMs: 2,

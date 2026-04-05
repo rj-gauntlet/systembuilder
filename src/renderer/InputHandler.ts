@@ -70,13 +70,32 @@ export class InputHandler {
     stage.on('pointerdown', (e: FederatedPointerEvent) => this.onPointerDown(e));
     stage.on('pointermove', (e: FederatedPointerEvent) => this.onPointerMove(e));
     stage.on('pointerup', (e: FederatedPointerEvent) => this.onPointerUp(e));
+    stage.on('rightclick', (e: FederatedPointerEvent) => this.onRightClick(e));
+  }
+
+  private isEditable(): boolean {
+    const status = this.engine.getState().simulation.status;
+    return status === 'building' || status === 'paused';
+  }
+
+  private onRightClick(e: FederatedPointerEvent): void {
+    e.preventDefault();
+    if (!this.isEditable()) return;
+
+    const pos = e.global;
+    const gridPos = this.grid.pixelToGrid(pos.x, pos.y);
+    const comp = this.findComponentAt(gridPos);
+    if (comp) {
+      this.engine.removeComponent(comp.id);
+      this.onStateChange();
+    }
   }
 
   private onPointerDown(e: FederatedPointerEvent): void {
     const pos = e.global;
     const gridPos = this.grid.pixelToGrid(pos.x, pos.y);
 
-    if (this.state.mode === 'place' && this.state.placingType) {
+    if (this.state.mode === 'place' && this.state.placingType && this.isEditable()) {
       // Check if cell is occupied
       const occupied = this.engine
         .getState()
@@ -89,7 +108,7 @@ export class InputHandler {
       return;
     }
 
-    if (this.state.mode === 'connect') {
+    if (this.state.mode === 'connect' && this.isEditable()) {
       // Find component under cursor
       const comp = this.findComponentAt(gridPos);
       if (comp) {

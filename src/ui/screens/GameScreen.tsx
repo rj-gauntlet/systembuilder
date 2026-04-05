@@ -2,25 +2,39 @@ import { useState, useCallback, useRef, useMemo } from 'react';
 import { GameEngine } from '../../engine/GameEngine';
 import { GameCanvas } from '../../renderer/GameCanvas';
 import { Toolbox } from '../components/Toolbox';
-import type { ComponentType } from '../../engine/types';
+import type { ComponentType, LevelDefinition } from '../../engine/types';
 import { InputHandler } from '../../renderer/InputHandler';
 
 interface GameScreenProps {
-  levelId?: string;
-  budgetLimit?: number;
+  level?: LevelDefinition;
   onExit?: () => void;
+  onComplete?: (score: import('../../engine/types').Score) => void;
 }
 
-export function GameScreen({ budgetLimit = 500, onExit }: GameScreenProps) {
-  const engine = useMemo(() => new GameEngine(budgetLimit), [budgetLimit]);
+export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
+  const budgetLimit = level?.briefing.monthlyBudget ?? 500;
+  const engine = useMemo(() => {
+    const e = new GameEngine(budgetLimit);
+    if (level) e.setLevelId(level.id);
+    return e;
+  }, [budgetLimit, level]);
+
   const [, forceUpdate] = useState(0);
   const inputRef = useRef<InputHandler | null>(null);
   const [activeMode, setActiveMode] = useState<'select' | 'place' | 'connect'>('select');
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
 
+  const completedRef = useRef(false);
+
   const triggerUpdate = useCallback(() => {
     forceUpdate((n) => n + 1);
-  }, []);
+    // Check if simulation completed (level mode)
+    const state = engine.getState();
+    if (state.simulation.status === 'complete' && onComplete && !completedRef.current) {
+      completedRef.current = true;
+      onComplete(state.score);
+    }
+  }, [engine, onComplete]);
 
   const handleSelectComponent = useCallback(
     (type: ComponentType) => {
@@ -44,23 +58,32 @@ export function GameScreen({ budgetLimit = 500, onExit }: GameScreenProps) {
   }, []);
 
   const state = engine.getState();
+  const simStatus = state.simulation.status;
+  const isEditable = simStatus === 'building' || simStatus === 'paused';
 
   return (
     <div style={styles.container}>
       <div style={styles.topBar}>
-        <h2 style={styles.title}>SystemBuilder</h2>
+        <h2 style={styles.title}>
+          {level ? level.briefing.system : 'SystemBuilder — Sandbox'}
+        </h2>
         <div style={styles.simControls}>
-          {state.simulation.status === 'building' && (
+          {level && (
+            <span style={styles.timer}>
+              {Math.max(0, Math.round((level.simulationDuration) - state.simulation.elapsedTime))}s
+            </span>
+          )}
+          {simStatus === 'building' && (
             <button style={styles.goLiveButton} onClick={() => { engine.startSimulation(); triggerUpdate(); }}>
               Go Live
             </button>
           )}
-          {state.simulation.status === 'running' && (
+          {simStatus === 'running' && (
             <button style={styles.pauseButton} onClick={() => { engine.pauseSimulation(); triggerUpdate(); }}>
               Pause
             </button>
           )}
-          {state.simulation.status === 'paused' && (
+          {simStatus === 'paused' && (
             <button style={styles.goLiveButton} onClick={() => { engine.startSimulation(); triggerUpdate(); }}>
               Resume
             </button>
@@ -80,10 +103,15 @@ export function GameScreen({ budgetLimit = 500, onExit }: GameScreenProps) {
           activeMode={activeMode}
           placingType={placingType}
           budget={state.budget}
-          disabled={state.simulation.status !== 'building'}
+          disabled={!isEditable}
         />
         <div style={styles.canvasWrapper}>
-          <GameCanvas engine={engine} onStateChange={triggerUpdate} inputHandlerRef={inputRef} />
+          <GameCanvas
+            engine={engine}
+            onStateChange={triggerUpdate}
+            inputHandlerRef={inputRef}
+            level={level}
+          />
         </div>
       </div>
     </div>
@@ -117,6 +145,15 @@ const styles: Record<string, React.CSSProperties> = {
   simControls: {
     display: 'flex',
     gap: 8,
+    alignItems: 'center',
+  },
+  timer: {
+    fontFamily: 'monospace',
+    fontSize: 16,
+    fontWeight: 700,
+    color: '#fbbf24',
+    minWidth: 40,
+    textAlign: 'right' as const,
   },
   goLiveButton: {
     padding: '6px 16px',

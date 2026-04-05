@@ -31,10 +31,9 @@ export class ParticleRenderer {
       const path = ConnectionLine.getPath(conn, components);
       if (!path) continue;
 
-      // Interpolate position along the path
-      const pos = particle.direction === 'request'
-        ? particle.position
-        : 1 - particle.position; // response travels visually in reverse
+      // Position already encodes visual location:
+      // Request: 0→1 (from→to), Response: 1→0 (to→from)
+      const pos = particle.position;
 
       const point = this.interpolatePath(path, pos);
       if (!point) continue;

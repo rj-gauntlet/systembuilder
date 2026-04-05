@@ -139,22 +139,29 @@ export class GameEngine {
     toPort: PortPosition,
   ): Connection | null {
     // Verify both components exist
-    const from = this.state.components.find((c) => c.id === fromComponentId);
-    const to = this.state.components.find((c) => c.id === toComponentId);
+    let from = this.state.components.find((c) => c.id === fromComponentId);
+    let to = this.state.components.find((c) => c.id === toComponentId);
     if (!from || !to) return null;
 
     // Don't allow self-connections
     if (fromComponentId === toComponentId) return null;
 
-    // Check for duplicate connection between same ports
+    // Auto-orient: infer direction so user click order doesn't matter.
+    // Traffic flows from → to. Priority:
+    //   1. Client is always "from" (traffic source)
+    //   2. Database is always "to" (traffic sink)
+    //   3. Otherwise, leftmost (then topmost) component is "from"
+    if (this.shouldSwapDirection(from, to)) {
+      [from, to] = [to, from];
+      [fromComponentId, toComponentId] = [toComponentId, fromComponentId];
+      [fromPort, toPort] = [toPort, fromPort];
+    }
+
+    // Check for duplicate connection between these two components (either direction)
     const duplicate = this.state.connections.find(
       (c) =>
-        c.fromComponentId === fromComponentId &&
-        c.toComponentId === toComponentId &&
-        c.fromPort.side === fromPort.side &&
-        c.fromPort.index === fromPort.index &&
-        c.toPort.side === toPort.side &&
-        c.toPort.index === toPort.index,
+        (c.fromComponentId === fromComponentId && c.toComponentId === toComponentId) ||
+        (c.fromComponentId === toComponentId && c.toComponentId === fromComponentId),
     );
     if (duplicate) return null;
 
@@ -169,6 +176,35 @@ export class GameEngine {
 
     this.state.connections.push(connection);
     return connection;
+  }
+
+  /** Returns true if from/to should be swapped to get natural traffic flow direction */
+  private shouldSwapDirection(from: Component, to: Component): boolean {
+    // Component type priority (lower = more "upstream" / source-like)
+    const priority: Record<string, number> = {
+      client: 0,
+      cdn: 1,
+      'rate-limiter': 2,
+      'load-balancer': 3,
+      server: 4,
+      cache: 5,
+      'message-queue': 6,
+      database: 7,
+    };
+
+    const fromPri = priority[from.type] ?? 4;
+    const toPri = priority[to.type] ?? 4;
+
+    // If types differ in priority, higher priority (lower number) should be "from"
+    if (fromPri !== toPri) {
+      return fromPri > toPri; // swap if "from" is more downstream than "to"
+    }
+
+    // Same priority — use spatial position (left-to-right, then top-to-bottom)
+    if (from.position.col !== to.position.col) {
+      return from.position.col > to.position.col;
+    }
+    return from.position.row > to.position.row;
   }
 
   disconnect(connectionId: string): boolean {

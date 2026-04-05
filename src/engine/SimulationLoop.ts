@@ -1,6 +1,8 @@
-import type { GameState, Particle, Connection } from './types';
+import type { GameState, Particle, Connection, LevelDefinition } from './types';
 import { COMPONENT_DEFS } from './componentDefs';
 import { processBehavior } from './components/BehaviorRegistry';
+import { EventSystem } from './EventSystem';
+import { ScoringEngine } from './ScoringEngine';
 
 let nextParticleId = 1;
 function particleUid(): string {
@@ -22,6 +24,15 @@ export interface SimulationContext {
 export class SimulationLoop {
   private accumulator = 0;
   private simTime = 0;
+  private eventSystem = new EventSystem();
+  private scoringEngine = new ScoringEngine();
+  private level: LevelDefinition | null = null;
+
+  loadLevel(level: LevelDefinition): void {
+    this.level = level;
+    this.eventSystem.loadLevel(level);
+  }
+
   tick(state: GameState, deltaMs: number): void {
     if (state.simulation.status !== 'running') return;
 
@@ -38,20 +49,29 @@ export class SimulationLoop {
   private step(state: GameState): void {
     const ctx = this.createContext(state);
 
-    // 1. Spawn request particles from clients
+    // 1. Fire events
+    this.eventSystem.update(state);
+
+    // 2. Spawn request particles from clients
     this.spawnClientRequests(ctx);
 
-    // 2. Move flowing particles along connections
+    // 3. Move flowing particles along connections
     this.moveParticles(ctx);
 
-    // 3. Process arrived particles through component behaviors
+    // 4. Process arrived particles through component behaviors
     this.processArrivedParticles(ctx);
 
-    // 4. Update component stats and health
+    // 5. Update component stats and health
     this.updateComponentStats(ctx);
 
-    // 5. Update score
+    // 6. Update score
     this.updateScore(state);
+
+    // 7. Check if simulation duration is complete
+    if (this.level && state.simulation.elapsedTime >= this.level.simulationDuration) {
+      state.simulation.status = 'complete';
+      state.score = this.scoringEngine.calculateScore(state, this.level);
+    }
   }
 
   private createContext(state: GameState): SimulationContext {
@@ -83,8 +103,10 @@ export class SimulationLoop {
       const outConns = ctx.getOutgoingConnections(client.id);
       if (outConns.length === 0) continue;
 
-      // Spawn a request every N ticks based on throughput
-      const interval = 1 / (client.stats.throughputLimit * TICK_RATE);
+      // Spawn ~4 visual particles per second per client (scaled by throughput)
+      // Higher throughput = slightly faster spawn, but capped for readability
+      const spawnRate = Math.min(6, 2 + (client.stats.throughputLimit / 500));
+      const interval = 60 / spawnRate; // ticks between spawns
       const timer = (this.clientTimers.get(client.id) ?? 0) + 1;
       this.clientTimers.set(client.id, timer);
 
@@ -264,6 +286,8 @@ export class SimulationLoop {
     this.accumulator = 0;
     this.simTime = 0;
     this.clientTimers.clear();
+    this.eventSystem.reset();
+    this.level = null;
     nextParticleId = 1;
   }
 }
