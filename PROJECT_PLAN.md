@@ -570,14 +570,14 @@ systembuilder/
 **Goal:** Project scaffolding, game engine core, typed interfaces, and basic canvas rendering with a component on a grid.
 
 **Deliverables:**
-- [ ] Project scaffolding (React 19 + Vite + TypeScript + PixiJS v8 + `@pixi/react`)
-- [ ] `GameState` interface and all core type definitions (`/src/engine/types.ts`)
-- [ ] `GameEngine` class with `addComponent()`, `removeComponent()`, `connect()`, `getState()`
-- [ ] Component data models — 8 types with costs, throughput limits, behavior rules
-- [ ] Basic PixiJS canvas rendering — display a component on a snap-to-grid canvas
-- [ ] Grid system with snap-to-grid placement
-- [ ] Port system — defined input/output anchor points per component type
-- [ ] localStorage scaffolding — `ProgressStore` with save/load skeleton
+- [x] Project scaffolding (React 19 + Vite + TypeScript + PixiJS v8 + `@pixi/react`)
+- [x] `GameState` interface and all core type definitions (`/src/engine/types.ts`)
+- [x] `GameEngine` class with `addComponent()`, `removeComponent()`, `connect()`, `getState()`
+- [x] Component data models — 8 types with costs, throughput limits, behavior rules
+- [x] Basic PixiJS canvas rendering — display a component on a snap-to-grid canvas
+- [x] Grid system with snap-to-grid placement
+- [x] Port system — defined input/output anchor points per component type
+- [x] localStorage scaffolding — `ProgressStore` with save/load skeleton
 
 **Key Tasks:**
 1. Initialize Vite + React + TypeScript project with PixiJS v8 and `@pixi/react`
@@ -605,18 +605,18 @@ systembuilder/
 **Goal:** Connection drawing, traffic flow animation, and the core simulation loop — the product's defining feature.
 
 **Deliverables:**
-- [ ] Connection drawing between component ports
-- [ ] Auto-routing algorithm for clean orthogonal wire paths
-- [ ] Wire re-routing when components are moved
-- [ ] Simulation tick loop in `GameEngine` (`SimulationLoop.ts`)
-- [ ] Component behavior implementations — each type processes traffic differently
-- [ ] Particle system — requests flow along connections at constant speed
-- [ ] Particles queue/stack inside overloaded components
-- [ ] Dropped request animation when components exceed capacity
-- [ ] Component stat overlays (req/s, latency, hit rate, queue depth)
-- [ ] Component health visualization (green → yellow → red based on load)
-- [ ] Budget system — monthly cost display, deducted on component placement
-- [ ] Budget HUD element in the canvas
+- [x] Connection drawing between component ports
+- [x] Auto-routing algorithm for clean orthogonal wire paths
+- [x] Wire re-routing when components are moved
+- [x] Simulation tick loop in `GameEngine` (`SimulationLoop.ts`)
+- [x] Component behavior implementations — each type processes traffic differently
+- [x] Particle system — requests flow along connections at constant speed
+- [x] Particles queue/stack inside overloaded components
+- [x] Dropped request animation when components exceed capacity
+- [x] Component stat overlays (req/s, latency, hit rate, queue depth)
+- [x] Component health visualization (green → yellow → red based on load)
+- [x] Budget system — monthly cost display, deducted on component placement
+- [x] Budget HUD element in the canvas
 
 **Key Tasks:**
 1. Implement connection drawing — click port A, drag to port B, connection created
@@ -648,17 +648,17 @@ systembuilder/
 **Goal:** Dynamic events, structured levels with objectives, scoring, and the full game loop from briefing to debrief.
 
 **Deliverables:**
-- [ ] Event system — `EventSystem.ts` with scripted event timeline + random event pool
-- [ ] Event notification banners in the HUD
-- [ ] Event effects on simulation (traffic multiplier, component failure, request flood)
-- [ ] 2-3 MVP level definitions with briefings, objectives, scripted events, and optimal benchmarks
-- [ ] Level flow: Briefing → Build → Go Live → Events → Debrief
-- [ ] Briefing screen with system description, objectives, budget
-- [ ] 3-star scoring engine — compare player metrics to optimal benchmark
-- [ ] Debrief screen with score breakdown, star rating, per-metric analysis
-- [ ] Level select screen with tier grouping
-- [ ] Star-gated progression — total star accumulation + minimum 1 star per level
-- [ ] Progress persistence — save stars, completion, unlocks to localStorage
+- [x] Event system — `EventSystem.ts` with scripted event timeline + random event pool
+- [x] Event notification banners in the HUD
+- [x] Event effects on simulation (traffic multiplier, component failure, request flood)
+- [x] 2-3 MVP level definitions with briefings, objectives, scripted events, and optimal benchmarks
+- [x] Level flow: Briefing → Build → Go Live → Events → Debrief
+- [x] Briefing screen with system description, objectives, budget
+- [x] 3-star scoring engine — compare player metrics to optimal benchmark
+- [x] Debrief screen with score breakdown, star rating, per-metric analysis
+- [x] Level select screen with tier grouping
+- [x] Star-gated progression — total star accumulation + minimum 1 star per level
+- [x] Progress persistence — save stars, completion, unlocks to localStorage
 
 **Key Tasks:**
 1. Implement `EventSystem.ts` — schedule scripted events by timestamp, fire random events from pool after scripted sequence completes
