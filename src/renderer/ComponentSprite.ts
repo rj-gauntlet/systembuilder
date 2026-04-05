@@ -2,70 +2,48 @@ import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 import type { Component, HealthStatus } from '../engine/types';
 import { GRID_CELL_SIZE } from '../engine/componentDefs';
 import { getPortPositions, PORT_RADIUS } from './PortSystem';
-
-const COMPONENT_SIZE = GRID_CELL_SIZE * 0.8;
-
-const HEALTH_COLORS: Record<HealthStatus, number> = {
-  healthy: 0x22c55e,
-  strained: 0xeab308,
-  critical: 0xef4444,
-  failed: 0x6b7280,
-};
-
-const TYPE_COLORS: Record<string, number> = {
-  client: 0x3b82f6,
-  server: 0x8b5cf6,
-  'load-balancer': 0x06b6d4,
-  database: 0xf59e0b,
-  cache: 0x10b981,
-  cdn: 0x0ea5e9,
-  'message-queue': 0xf97316,
-  'rate-limiter': 0xec4899,
-};
+import { COMPONENT_DRAWERS } from './componentDrawers';
 
 const TYPE_LABELS: Record<string, string> = {
-  client: 'CLT',
-  server: 'SRV',
-  'load-balancer': 'LB',
-  database: 'DB',
+  client: 'CLIENT',
+  server: 'SERVER',
+  'load-balancer': 'LOAD BAL',
+  database: 'DATABASE',
   cache: 'CACHE',
   cdn: 'CDN',
-  'message-queue': 'MQ',
-  'rate-limiter': 'RL',
+  'message-queue': 'MSG QUEUE',
+  'rate-limiter': 'RATE LIM',
 };
 
-const TYPE_ICONS: Record<string, string> = {
-  client: '\u{1F4BB}',       // laptop
-  server: '\u{1F5A5}',       // desktop
-  'load-balancer': '\u{2696}', // scales
-  database: '\u{1F4BE}',     // floppy/disk
-  cache: '\u{26A1}',         // lightning
-  cdn: '\u{1F310}',          // globe
-  'message-queue': '\u{1F4E8}', // envelope
-  'rate-limiter': '\u{1F6E1}',  // shield
+const TYPE_LABEL_COLORS: Record<string, number> = {
+  client: 0x60a5fa,
+  server: 0xa78bfa,
+  'load-balancer': 0x22d3ee,
+  database: 0xfbbf24,
+  cache: 0x34d399,
+  cdn: 0x38bdf8,
+  'message-queue': 0xfb923c,
+  'rate-limiter': 0xf472b6,
 };
 
 const labelStyle = new TextStyle({
   fontFamily: 'monospace',
-  fontSize: 9,
+  fontSize: 7,
   fill: 0xffffff,
   fontWeight: 'bold',
-});
-
-const iconStyle = new TextStyle({
-  fontSize: 20,
+  letterSpacing: 0.5,
 });
 
 export class ComponentSprite {
   readonly container: Container;
   private body: Graphics;
-  private healthRing: Graphics;
-  private label: Text;
-  private icon: Text;
   private portGraphics: Graphics;
+  private label: Text;
+  private frameCount = 0;
 
   componentId: string;
   componentType: Component['type'];
+  private lastHealth: HealthStatus = 'healthy';
 
   constructor(component: Component) {
     this.componentId = component.id;
@@ -75,11 +53,7 @@ export class ComponentSprite {
     this.container.eventMode = 'static';
     this.container.cursor = 'pointer';
 
-    // Health ring (behind body)
-    this.healthRing = new Graphics();
-    this.container.addChild(this.healthRing);
-
-    // Main body
+    // Main body (drawn by type-specific drawer)
     this.body = new Graphics();
     this.container.addChild(this.body);
 
@@ -87,32 +61,39 @@ export class ComponentSprite {
     this.portGraphics = new Graphics();
     this.container.addChild(this.portGraphics);
 
-    // Icon (emoji)
-    this.icon = new Text({ text: TYPE_ICONS[component.type] ?? '?', style: iconStyle });
-    this.icon.anchor.set(0.5);
-    this.icon.position.set(0, -4);
-    this.container.addChild(this.icon);
-
-    // Label below icon
-    this.label = new Text({ text: TYPE_LABELS[component.type] ?? '?', style: labelStyle });
+    // Label below component
+    const labelText = TYPE_LABELS[component.type] ?? '???';
+    this.label = new Text({ text: labelText, style: labelStyle });
     this.label.anchor.set(0.5);
-    this.label.position.set(0, 16);
+    this.label.position.set(0, 32);
+    this.label.style.fill = TYPE_LABEL_COLORS[component.type] ?? 0xffffff;
     this.container.addChild(this.label);
 
-    this.drawBody(component);
     this.updatePosition(component);
-    this.updateHealth(component.health);
+    this.redraw(component);
     this.drawPorts(component);
   }
 
-  private drawBody(component: Component): void {
-    const color = TYPE_COLORS[component.type] ?? 0x888888;
-    const half = COMPONENT_SIZE / 2;
-
+  private redraw(component: Component): void {
     this.body.clear();
-    this.body.roundRect(-half, -half, COMPONENT_SIZE, COMPONENT_SIZE, 10);
-    this.body.fill({ color, alpha: 0.15 });
-    this.body.stroke({ color, width: 2, alpha: 0.8 });
+    this.lastHealth = component.health;
+
+    const drawer = COMPONENT_DRAWERS[component.type];
+    if (drawer) {
+      const extra = component.stats.queueDepth ?? 0;
+      drawer(this.body, component.health, this.frameCount, extra);
+    }
+
+    // Update label color based on health
+    if (component.health === 'failed') {
+      this.label.style.fill = 0x333333;
+    } else if (component.health === 'critical') {
+      this.label.style.fill = 0xef4444;
+    } else if (component.health === 'strained') {
+      this.label.style.fill = 0xeab308;
+    } else {
+      this.label.style.fill = TYPE_LABEL_COLORS[component.type] ?? 0xffffff;
+    }
   }
 
   private drawPorts(component: Component): void {
@@ -126,8 +107,8 @@ export class ComponentSprite {
       const ry = port.y - cy;
       this.portGraphics.circle(rx, ry, PORT_RADIUS);
     }
-    this.portGraphics.fill({ color: 0xffffff, alpha: 0.5 });
-    this.portGraphics.stroke({ color: 0xffffff, width: 1, alpha: 0.7 });
+    this.portGraphics.fill({ color: 0xffffff, alpha: 0.4 });
+    this.portGraphics.stroke({ color: 0xffffff, width: 1, alpha: 0.6 });
   }
 
   updatePosition(component: Component): void {
@@ -137,18 +118,14 @@ export class ComponentSprite {
     this.drawPorts(component);
   }
 
-  updateHealth(health: HealthStatus): void {
-    const color = HEALTH_COLORS[health];
-    const half = COMPONENT_SIZE / 2 + 3;
-
-    this.healthRing.clear();
-    this.healthRing.roundRect(-half, -half, half * 2, half * 2, 12);
-    this.healthRing.stroke({ color, width: 2, alpha: 0.9 });
-  }
-
   update(component: Component): void {
+    this.frameCount++;
     this.updatePosition(component);
-    this.updateHealth(component.health);
+
+    // Redraw every few frames for LED animations, or immediately on health change
+    if (component.health !== this.lastHealth || this.frameCount % 4 === 0) {
+      this.redraw(component);
+    }
   }
 
   destroy(): void {

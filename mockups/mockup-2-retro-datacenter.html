@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SystemBuilder Mockup 2 — Retro Data Center</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; font-family: 'Press Start 2P', monospace; overflow: hidden; }
+
+  .canvas-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 20px;
+  }
+
+  .game-canvas {
+    position: relative;
+    width: 1120px;
+    height: 700px;
+    background: #111127;
+    border: 4px solid #252550;
+    image-rendering: pixelated;
+    overflow: hidden;
+  }
+
+  /* Floor tiles — isometric-ish checkerboard */
+  .floor {
+    position: absolute;
+    inset: 32px 0 0 0;
+    background-image:
+      linear-gradient(45deg, #13132a 25%, transparent 25%),
+      linear-gradient(-45deg, #13132a 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #13132a 75%),
+      linear-gradient(-45deg, transparent 75%, #13132a 75%);
+    background-size: 40px 40px;
+    background-position: 0 0, 0 20px, 20px -20px, -20px 0;
+    background-color: #0f0f25;
+    opacity: 0.6;
+  }
+
+  /* Rack unit base style */
+  .rack {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+  }
+
+  .rack-body {
+    position: relative;
+    image-rendering: pixelated;
+  }
+
+  /* Pixel art server rack */
+  .rack-unit {
+    width: 64px;
+    height: 20px;
+    background: #1a1a3a;
+    border: 2px solid;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    gap: 3px;
+    margin-bottom: 2px;
+  }
+
+  .led {
+    width: 4px;
+    height: 4px;
+    border-radius: 0;
+  }
+  .led.green { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+  .led.yellow { background: #eab308; box-shadow: 0 0 4px #eab308; }
+  .led.red { background: #ef4444; box-shadow: 0 0 4px #ef4444; animation: blink 0.3s infinite; }
+  .led.blue { background: #3b82f6; box-shadow: 0 0 3px #3b82f6; }
+  .led.off { background: #333; }
+
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .vent {
+    flex: 1;
+    height: 3px;
+    background: repeating-linear-gradient(90deg, #222 0px, #222 2px, #0a0a1a 2px, #0a0a1a 4px);
+  }
+
+  .rack-label {
+    font-size: 6px;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 8px currentColor;
+  }
+
+  .rack-stats {
+    font-size: 5px;
+    margin-top: 2px;
+    color: #6b8;
+    background: rgba(0,0,0,0.7);
+    padding: 2px 4px;
+    border: 1px solid #234;
+  }
+
+  /* Component-specific colors */
+  .rack-client .rack-unit { border-color: #2563eb; }
+  .rack-client .rack-label { color: #60a5fa; }
+
+  .rack-cache .rack-unit { border-color: #059669; }
+  .rack-cache .rack-label { color: #34d399; }
+
+  .rack-lb .rack-unit { border-color: #0891b2; }
+  .rack-lb .rack-label { color: #22d3ee; }
+
+  .rack-server .rack-unit { border-color: #7c3aed; }
+  .rack-server .rack-label { color: #a78bfa; }
+
+  .rack-db .rack-unit { border-color: #d97706; }
+  .rack-db .rack-label { color: #fbbf24; }
+
+  .rack-mq .rack-unit { border-color: #ea580c; }
+  .rack-mq .rack-label { color: #fb923c; }
+
+  .rack-rl .rack-unit { border-color: #db2777; }
+  .rack-rl .rack-label { color: #f472b6; }
+
+  /* Cable trays */
+  .cable-tray {
+    position: absolute;
+    z-index: 5;
+  }
+  .cable-h {
+    height: 4px;
+    background: linear-gradient(180deg, #252540 0%, #1a1a35 100%);
+    border-top: 1px solid #333355;
+    border-bottom: 1px solid #111125;
+  }
+  .cable-v {
+    width: 4px;
+    background: linear-gradient(90deg, #252540 0%, #1a1a35 100%);
+    border-left: 1px solid #333355;
+    border-right: 1px solid #111125;
+  }
+
+  /* Data packets flowing through cables */
+  .packet {
+    position: absolute;
+    width: 8px;
+    height: 4px;
+    z-index: 20;
+    image-rendering: pixelated;
+  }
+  .packet.read {
+    background: #38bdf8;
+    box-shadow: 0 0 6px #38bdf8, 2px 0 3px #38bdf8;
+  }
+  .packet.write {
+    background: #818cf8;
+    box-shadow: 0 0 6px #818cf8, 2px 0 3px #818cf8;
+  }
+  .packet.response {
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e, -2px 0 3px #22c55e;
+  }
+  .packet.dropped {
+    background: #ef4444;
+    box-shadow: 0 0 10px #ef4444;
+    animation: drop-flash 0.3s ease-out;
+  }
+  @keyframes drop-flash {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+
+  /* HUD — retro terminal style */
+  .hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: #0a0a18;
+    border-bottom: 3px solid #252550;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 20px;
+    z-index: 90;
+  }
+  .hud-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .hud-label {
+    font-size: 6px;
+    color: #4a5568;
+  }
+  .hud-val {
+    font-size: 7px;
+    color: #68d391;
+    text-shadow: 0 0 6px #68d391;
+  }
+  .hud-val.warn {
+    color: #fbbf24;
+    text-shadow: 0 0 6px #fbbf24;
+  }
+  .hud-val.crit {
+    color: #fc8181;
+    text-shadow: 0 0 6px #fc8181;
+  }
+
+  .hud-bar {
+    width: 60px;
+    height: 8px;
+    background: #1a1a30;
+    border: 1px solid #333;
+    display: flex;
+    overflow: hidden;
+  }
+  .hud-bar-seg {
+    height: 100%;
+  }
+
+  /* Event alert */
+  .event-alert {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a0a0a;
+    border: 2px solid #ef4444;
+    padding: 8px 20px;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .event-alert .alert-icon {
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    animation: blink 0.5s infinite;
+  }
+  .event-alert .alert-text {
+    font-size: 6px;
+    color: #fca5a5;
+    text-shadow: 0 0 4px #ef4444;
+  }
+
+  /* Ambient particles (background data center feel) */
+  .ambient-dot {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: #22c55e;
+    opacity: 0.3;
+    animation: ambient-blink 3s ease-in-out infinite;
+    z-index: 1;
+  }
+  @keyframes ambient-blink {
+    0%,100% { opacity: 0.1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Corner decorations — rack mounting rails */
+  .rail-left, .rail-right {
+    position: absolute;
+    top: 32px;
+    bottom: 0;
+    width: 8px;
+    z-index: 2;
+    background: repeating-linear-gradient(
+      180deg,
+      #1a1a35 0px,
+      #1a1a35 18px,
+      #252545 18px,
+      #252545 20px
+    );
+  }
+  .rail-left { left: 0; border-right: 1px solid #333; }
+  .rail-right { right: 0; border-left: 1px solid #333; }
+
+  /* Status panel (bottom right) */
+  .status-panel {
+    position: absolute;
+    bottom: 8px;
+    right: 16px;
+    background: rgba(0,0,0,0.8);
+    border: 2px solid #252550;
+    padding: 8px 12px;
+    z-index: 90;
+  }
+  .status-row {
+    font-size: 5px;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+  .status-label { color: #4a5568; width: 50px; }
+  .status-val { color: #a0aec0; }
+  .status-val.good { color: #68d391; }
+  .status-val.bad { color: #fc8181; }
+</style>
+</head>
+<body>
+<div class="canvas-wrapper">
+  <div class="game-canvas">
+    <div class="floor"></div>
+    <div class="rail-left"></div>
+    <div class="rail-right"></div>
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-item">
+        <span class="hud-label">SYS</span>
+        <span class="hud-val">ONLINE</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">BUDGET</span>
+        <div class="hud-bar">
+          <div class="hud-bar-seg" style="width: 72%; background: #22c55e;"></div>
+        </div>
+        <span class="hud-val">$165</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">UPTIME</span>
+        <span class="hud-val">98.29%</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">LATENCY</span>
+        <span class="hud-val">53ms</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">REQS</span>
+        <span class="hud-val">847</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">T-</span>
+        <span class="hud-val warn">42s</span>
+      </div>
+    </div>
+
+    <!-- Event -->
+    <div class="event-alert">
+      <div class="alert-icon"></div>
+      <div class="alert-text">SERVER DOWN — NODE #2 OFFLINE [12s remaining]</div>
+    </div>
+
+    <!-- ====== RACK: CLIENT ====== -->
+    <div class="rack rack-client" style="left: 60px; top: 200px;">
+      <div class="rack-body">
+        <div class="rack-unit">
+          <div class="led green"></div>
+          <div class="led blue"></div>
+          <div class="vent"></div>
+        </div>
+        <div class="rack-unit">
+          <div class="led green"></div>
+          <div class="led blue"></div>
+          <div class="vent"></div>
+        </div>
+      </div>
+      <div class="rack-label">CLIENT</div>
+      <div class="rack-stats">4.00 req/s</div>
+    </div>
+
+    <!-- ====== RACK: CACHE ====== -->
+    <div class="rack rack-cache" style="left: 220px; top: 200px;">
+      <div class="rack-body">
+        <div class="rack-unit">
+          <div class="led green"></div>
+          <div class="led green"></div>
+          <div class="vent"></div>
+        </div>
+        <div class="rack-unit">
+          <div class="led green"></div>
+          <div class="led off"></div>
+          <div class="vent"></div>
+        </div>
+      </div>
+      <div class="rack-label">CACHE</div>
+      <div class="rack-stats">hit: 71%</div>
+    </div>
+
+    <!-- ====== RACK: LOAD BALANCER ====== -->
+    <div class="rack rack-lb" style="left: 380px; top: 200px;">
+      <div class="rack-body">
+        <div class="rack-unit">
+          <div class="led green"></div>
+          <div class="led green"></div>
+          <div class="led green"></div>
+          <div class="vent"></div>
+        </div>
+        <div class="rack-unit">
+          <div class="led blue"></div>
+          <div class="led blue"></div>
+          <div class="vent"></div>
+        </div>
+      </div>
+      <div class="rack-label">LOAD BAL</div>
+      <div class="rack-stats">3.00 req/s</div>
+    </div>
+
+    <!-- ====== RACK: SERVER 1 ====== -->
+    <div class="rack rack-server" style="left: 540px; top: 120px;">
+      <div class="rack-body">
+        <div class="rack-unit">
+          <div class="led yellow"></div>
+          <div class="led yellow"></div>
+          <div class="vent"></div>
+        </div>
+        <div class="rack-unit">
+          <div class="led yellow"></div>
+          <div class="led green"></div>
+          <div class="vent"></div>
+        </div>
+        <div class="rack-unit">
+          <div class="led green"></div>
+          <div class="led off"></div>
+          <div class="vent"></div>
+        </div>
+      </div>
+      <div class="rack-label">SERVER 1</div>
+      <div class="rack-stats">67.23ms ▲</div>
+    </div>
+
+    <!-- ====== RACK: SERVER 2 (FAILED) ====== -->
+    <div class="rack rack-server" style="left: 540px; top: 320px;">
+      <div class="rack-body">
+        <div class="rack-unit" style="border-color: #444; background: #111;">
+          <div class="led red"></div>
+          <div class="led off"></div>
+          <div class="vent" style="opacity: 0.3;"></div>
+        </div>
+        <div class="rack-unit" style="border-color: #444; background: #111;">
+          <div class="led red"></div>
+          <div class="led off"></div>
+          <div class="vent" style="opacity: 0.3;"></div>
+        </div>
+        <div class="rack-unit" style="border-color: #444; background: #111;">
+          <div class="led off"></div>
+          <div class="led off"></div>
+          <div class="vent" style="opacity: 0.3;"></div>
+        </div>
+      </div>
+      <div class="rack-label" style="color: #ef4444; animation: blink 1s infinite;">SERVER 2</div>
+      <div class="rack-stats" style="color: #ef4444;">OFFLINE</div>
+    </div>
+
+    <!-- ====== RACK: DATABASE ====== -->
+    <div class="rack rack-db" style="left: 720px; top: 200px;">
+      <div class="rack-body">
+        <div class="rack-unit">
+          <div class="led green"></div>
+          <div class="led green"></div>
+          <div class="vent"></div>
+        </div>
+        <div class="rack-unit">
+          <div class="led green"></div>
+          <div class="led blue"></div>
+          <div class="vent"></div>
+        </div>
+        <div class="rack-unit">
+          <div class="led green"></div>
+          <div class="led off"></div>
+          <div class="vent"></div>
+        </div>
+        <div class="rack-unit">
+          <div class="led blue"></div>
+          <div class="led blue"></div>
+          <div class="vent"></div>
+        </div>
+      </div>
+      <div class="rack-label">DATABASE</div>
+      <div class="rack-stats">45.00ms</div>
+    </div>
+
+    <!-- Cable trays -->
+    <!-- Client → Cache -->
+    <div class="cable-tray cable-h" style="left: 128px; top: 230px; width: 92px;"></div>
+    <!-- Cache → LB -->
+    <div class="cable-tray cable-h" style="left: 288px; top: 230px; width: 92px;"></div>
+    <!-- LB → Server 1 -->
+    <div class="cable-tray cable-h" style="left: 448px; top: 230px; width: 32px;"></div>
+    <div class="cable-tray cable-v" style="left: 480px; top: 155px; height: 79px;"></div>
+    <div class="cable-tray cable-h" style="left: 480px; top: 155px; width: 60px;"></div>
+    <!-- LB → Server 2 -->
+    <div class="cable-tray cable-v" style="left: 480px; top: 230px; height: 125px;"></div>
+    <div class="cable-tray cable-h" style="left: 480px; top: 355px; width: 60px;"></div>
+    <!-- Server 1 → DB -->
+    <div class="cable-tray cable-h" style="left: 608px; top: 155px; width: 52px;"></div>
+    <div class="cable-tray cable-v" style="left: 660px; top: 155px; height: 79px;"></div>
+    <div class="cable-tray cable-h" style="left: 660px; top: 230px; width: 60px;"></div>
+    <!-- Server 2 → DB (greyed out — offline) -->
+    <div class="cable-tray cable-h" style="left: 608px; top: 355px; width: 52px; opacity: 0.3;"></div>
+    <div class="cable-tray cable-v" style="left: 660px; top: 234px; height: 125px; opacity: 0.3;"></div>
+
+    <!-- Data packets on cables -->
+    <div class="packet read" style="left: 148px; top: 228px;"></div>
+    <div class="packet write" style="left: 172px; top: 228px;"></div>
+    <div class="packet response" style="left: 160px; top: 233px;"></div>
+
+    <div class="packet read" style="left: 308px; top: 228px;"></div>
+    <div class="packet response" style="left: 330px; top: 233px;"></div>
+    <div class="packet response" style="left: 350px; top: 233px;"></div>
+
+    <div class="packet read" style="left: 495px; top: 170px;"></div>
+    <div class="packet response" style="left: 490px; top: 188px;"></div>
+
+    <div class="packet read" style="left: 630px; top: 153px;"></div>
+    <div class="packet response" style="left: 675px; top: 200px;"></div>
+
+    <!-- Dropped packet at Server 2 -->
+    <div class="packet dropped" style="left: 498px; top: 340px;"></div>
+
+    <!-- Ambient data center dots -->
+    <div class="ambient-dot" style="left: 850px; top: 150px;"></div>
+    <div class="ambient-dot" style="left: 900px; top: 300px; animation-delay: 1s;"></div>
+    <div class="ambient-dot" style="left: 870px; top: 450px; animation-delay: 0.5s;"></div>
+    <div class="ambient-dot" style="left: 950px; top: 200px; animation-delay: 1.5s;"></div>
+    <div class="ambient-dot" style="left: 100px; top: 450px; animation-delay: 0.7s;"></div>
+    <div class="ambient-dot" style="left: 300px; top: 500px; animation-delay: 2s;"></div>
+
+    <!-- Status panel -->
+    <div class="status-panel">
+      <div class="status-row">
+        <span class="status-label">NODES</span>
+        <span class="status-val">5/6 <span class="bad">▼1</span></span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">CONNS</span>
+        <span class="status-val good">6 ACTIVE</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">DROPPED</span>
+        <span class="status-val bad">14 (1.7%)</span>
+      </div>
+      <div class="status-row">
+        <span class="status-label">EVENTS</span>
+        <span class="status-val bad">1 ACTIVE</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

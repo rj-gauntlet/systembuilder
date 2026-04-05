@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SystemBuilder Mockup 1 — Pixel Flat</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; font-family: 'Press Start 2P', monospace; overflow: hidden; }
+
+  .canvas-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    padding: 20px;
+  }
+
+  .game-canvas {
+    position: relative;
+    width: 1120px;
+    height: 640px;
+    background: #0f0f23;
+    border: 3px solid #1a1a3e;
+    image-rendering: pixelated;
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.1), inset 0 0 80px rgba(0,0,0,0.5);
+  }
+
+  /* Grid */
+  .grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(30,30,60,0.4) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30,30,60,0.4) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  /* Scanline effect */
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* Component base */
+  .component {
+    position: absolute;
+    width: 72px;
+    height: 72px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid;
+    image-rendering: pixelated;
+  }
+
+  .component .icon {
+    font-size: 28px;
+    line-height: 1;
+    image-rendering: pixelated;
+  }
+
+  .component .label {
+    font-size: 6px;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+    text-shadow: 1px 1px 0 rgba(0,0,0,0.8);
+  }
+
+  /* Health glow */
+  .component.healthy { box-shadow: 0 0 8px rgba(34,197,94,0.4), inset 0 0 12px rgba(34,197,94,0.1); }
+  .component.strained { box-shadow: 0 0 8px rgba(234,179,8,0.4), inset 0 0 12px rgba(234,179,8,0.1); }
+  .component.critical { box-shadow: 0 0 12px rgba(239,68,68,0.6), inset 0 0 12px rgba(239,68,68,0.2); animation: pulse-red 0.5s infinite; }
+
+  @keyframes pulse-red {
+    0%,100% { box-shadow: 0 0 12px rgba(239,68,68,0.6); }
+    50% { box-shadow: 0 0 20px rgba(239,68,68,0.9); }
+  }
+
+  /* Stat overlay */
+  .stat-overlay {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    border: 1px solid #334;
+    padding: 2px 5px;
+    font-size: 5px;
+    color: #8b8;
+    white-space: nowrap;
+    letter-spacing: 0.5px;
+  }
+
+  /* Component types */
+  .comp-client {
+    background: linear-gradient(180deg, #1e3a5f 0%, #0f1f3a 100%);
+    border-color: #3b82f6;
+    color: #93c5fd;
+  }
+  .comp-cache {
+    background: linear-gradient(180deg, #0f3a2a 0%, #071f18 100%);
+    border-color: #10b981;
+    color: #6ee7b7;
+  }
+  .comp-lb {
+    background: linear-gradient(180deg, #1a3a4a 0%, #0a1f2a 100%);
+    border-color: #06b6d4;
+    color: #67e8f9;
+  }
+  .comp-server {
+    background: linear-gradient(180deg, #2a1f4a 0%, #15102a 100%);
+    border-color: #8b5cf6;
+    color: #c4b5fd;
+  }
+  .comp-db {
+    background: linear-gradient(180deg, #3a2a0f 0%, #1f1507 100%);
+    border-color: #f59e0b;
+    color: #fcd34d;
+  }
+  .comp-mq {
+    background: linear-gradient(180deg, #3a1f0f 0%, #1f1007 100%);
+    border-color: #f97316;
+    color: #fdba74;
+  }
+  .comp-rl {
+    background: linear-gradient(180deg, #3a0f2a 0%, #1f0715 100%);
+    border-color: #ec4899;
+    color: #f9a8d4;
+  }
+  .comp-cdn {
+    background: linear-gradient(180deg, #0f2a3a 0%, #07151f 100%);
+    border-color: #0ea5e9;
+    color: #7dd3fc;
+  }
+
+  /* Pixel art icons using box shadows (8x8 pixel grids) */
+  .pixel-icon {
+    width: 24px;
+    height: 24px;
+    position: relative;
+  }
+
+  /* Connection wires */
+  .wire {
+    position: absolute;
+    height: 3px;
+    background: #334155;
+    box-shadow: 0 0 4px rgba(100,116,139,0.3);
+    z-index: 1;
+  }
+  .wire-v {
+    width: 3px;
+    height: auto;
+    background: #334155;
+  }
+
+  /* Particles */
+  .particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 0; /* pixel square */
+    z-index: 50;
+    animation: flow 2s linear infinite;
+  }
+  .particle.read { background: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+  .particle.write { background: #818cf8; box-shadow: 0 0 6px #818cf8; }
+  .particle.response { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+
+  @keyframes flow {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+
+  /* HUD */
+  .hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    background: rgba(0,0,0,0.8);
+    border-bottom: 2px solid #1a1a3e;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 24px;
+    z-index: 90;
+  }
+  .hud-item {
+    font-size: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .hud-label { color: #64748b; }
+  .hud-value { color: #e2e8f0; }
+  .hud-value.green { color: #22c55e; }
+  .hud-value.yellow { color: #fbbf24; }
+
+  .budget-bar {
+    width: 80px;
+    height: 6px;
+    background: #1e293b;
+    border: 1px solid #334;
+  }
+  .budget-fill {
+    height: 100%;
+    width: 72%;
+    background: #22c55e;
+  }
+
+  /* Event banner */
+  .event-banner {
+    position: absolute;
+    top: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(234,179,8,0.15);
+    border: 2px solid #fbbf24;
+    padding: 6px 16px;
+    font-size: 7px;
+    color: #fbbf24;
+    z-index: 90;
+    animation: banner-flash 1s ease-in-out infinite;
+  }
+  @keyframes banner-flash {
+    0%,100% { border-color: #fbbf24; }
+    50% { border-color: #f59e0b; }
+  }
+
+  /* Port dots */
+  .port {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    opacity: 0.5;
+    border: 1px solid rgba(255,255,255,0.8);
+  }
+
+  /* Hint toast */
+  .hint-toast {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    border: 2px solid #fbbf24;
+    padding: 8px 14px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    z-index: 90;
+    max-width: 400px;
+  }
+  .hint-icon { font-size: 14px; }
+  .hint-text { font-size: 6px; color: #e2e8f0; line-height: 1.6; }
+  .hint-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 5px;
+    margin-top: 4px;
+    padding: 3px 8px;
+    background: #3b82f6;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="canvas-wrapper">
+  <div class="game-canvas">
+    <div class="grid"></div>
+    <div class="scanlines"></div>
+
+    <!-- HUD -->
+    <div class="hud">
+      <div class="hud-item">
+        <span class="hud-label">BUDGET</span>
+        <div class="budget-bar"><div class="budget-fill"></div></div>
+        <span class="hud-value green">$165/$300</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">UPTIME</span>
+        <span class="hud-value green">98.29%</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">LATENCY</span>
+        <span class="hud-value">53.15ms</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">REQS</span>
+        <span class="hud-value">847</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">TIME</span>
+        <span class="hud-value yellow">42s</span>
+      </div>
+    </div>
+
+    <!-- Event banner -->
+    <div class="event-banner">⚠ VIRAL LINK! — Traffic surging 3x</div>
+
+    <!-- Client -->
+    <div class="component comp-client healthy" style="left: 44px; top: 264px;">
+      <div class="icon">🖥</div>
+      <div class="label">CLIENT</div>
+      <div class="port" style="right: -5px; top: 20px;"></div>
+      <div class="port" style="right: -5px; top: 44px;"></div>
+      <div class="stat-overlay">4.00 req/s</div>
+    </div>
+
+    <!-- Cache -->
+    <div class="component comp-cache healthy" style="left: 204px; top: 264px;">
+      <div class="icon">⚡</div>
+      <div class="label">CACHE</div>
+      <div class="port" style="left: -5px; top: 20px;"></div>
+      <div class="port" style="left: -5px; top: 44px;"></div>
+      <div class="port" style="right: -5px; top: 33px;"></div>
+      <div class="stat-overlay">hit: 71%</div>
+    </div>
+
+    <!-- Load Balancer -->
+    <div class="component comp-lb healthy" style="left: 364px; top: 264px;">
+      <div class="icon">⚖</div>
+      <div class="label">LB</div>
+      <div class="port" style="left: -5px; top: 20px;"></div>
+      <div class="port" style="left: -5px; top: 44px;"></div>
+      <div class="port" style="right: -5px; top: 14px;"></div>
+      <div class="port" style="right: -5px; top: 30px;"></div>
+      <div class="port" style="right: -5px; top: 46px;"></div>
+      <div class="stat-overlay">3.00 req/s</div>
+    </div>
+
+    <!-- Server 1 -->
+    <div class="component comp-server strained" style="left: 524px; top: 184px;">
+      <div class="icon">🖥</div>
+      <div class="label">SERVER</div>
+      <div class="port" style="left: -5px; top: 33px;"></div>
+      <div class="port" style="right: -5px; top: 33px;"></div>
+      <div class="stat-overlay">67.23ms</div>
+    </div>
+
+    <!-- Server 2 -->
+    <div class="component comp-server healthy" style="left: 524px; top: 344px;">
+      <div class="icon">🖥</div>
+      <div class="label">SERVER</div>
+      <div class="port" style="left: -5px; top: 33px;"></div>
+      <div class="port" style="right: -5px; top: 33px;"></div>
+      <div class="stat-overlay">22.50ms</div>
+    </div>
+
+    <!-- Database -->
+    <div class="component comp-db healthy" style="left: 684px; top: 264px;">
+      <div class="icon">💾</div>
+      <div class="label">DATABASE</div>
+      <div class="port" style="left: -5px; top: 20px;"></div>
+      <div class="port" style="left: -5px; top: 44px;"></div>
+      <div class="stat-overlay">45.00ms</div>
+    </div>
+
+    <!-- Wires (simplified horizontal/vertical) -->
+    <!-- Client → Cache -->
+    <div class="wire" style="left: 119px; top: 301px; width: 89px;"></div>
+    <!-- Cache → LB -->
+    <div class="wire" style="left: 279px; top: 301px; width: 89px;"></div>
+    <!-- LB → Server 1 -->
+    <div class="wire" style="left: 439px; top: 281px; width: 40px;"></div>
+    <div class="wire-v wire" style="left: 479px; top: 221px; width: 3px; height: 63px;"></div>
+    <div class="wire" style="left: 479px; top: 221px; width: 49px;"></div>
+    <!-- LB → Server 2 -->
+    <div class="wire" style="left: 439px; top: 313px; width: 40px;"></div>
+    <div class="wire-v wire" style="left: 479px; top: 313px; width: 3px; height: 68px;"></div>
+    <div class="wire" style="left: 479px; top: 381px; width: 49px;"></div>
+    <!-- Server 1 → DB -->
+    <div class="wire" style="left: 599px; top: 221px; width: 40px;"></div>
+    <div class="wire-v wire" style="left: 639px; top: 221px; width: 3px; height: 67px;"></div>
+    <div class="wire" style="left: 639px; top: 285px; width: 49px;"></div>
+    <!-- Server 2 → DB -->
+    <div class="wire" style="left: 599px; top: 381px; width: 40px;"></div>
+    <div class="wire-v wire" style="left: 639px; top: 313px; width: 3px; height: 71px;"></div>
+    <div class="wire" style="left: 639px; top: 313px; width: 49px;"></div>
+
+    <!-- Particles (static representation) -->
+    <div class="particle read" style="left: 140px; top: 298px;"></div>
+    <div class="particle read" style="left: 165px; top: 298px;"></div>
+    <div class="particle write" style="left: 155px; top: 306px;"></div>
+    <div class="particle response" style="left: 175px; top: 306px;"></div>
+
+    <div class="particle read" style="left: 300px; top: 298px;"></div>
+    <div class="particle write" style="left: 330px; top: 298px;"></div>
+    <div class="particle response" style="left: 310px; top: 306px;"></div>
+    <div class="particle response" style="left: 290px; top: 306px;"></div>
+
+    <div class="particle read" style="left: 460px; top: 278px;"></div>
+    <div class="particle read" style="left: 500px; top: 230px;"></div>
+    <div class="particle write" style="left: 465px; top: 345px;"></div>
+    <div class="particle response" style="left: 500px; top: 370px;"></div>
+
+    <div class="particle read" style="left: 620px; top: 250px;"></div>
+    <div class="particle response" style="left: 660px; top: 295px;"></div>
+
+    <!-- Hint toast -->
+    <div class="hint-toast">
+      <div class="hint-icon">💡</div>
+      <div>
+        <div class="hint-text">Server 1 is strained at 67ms. Your load balancer is distributing unevenly — is one server handling more traffic than the other?</div>
+        <button class="hint-btn">ASK ABOUT THIS</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

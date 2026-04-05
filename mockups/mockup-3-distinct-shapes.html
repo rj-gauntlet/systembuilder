@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SystemBuilder Mockup 3 — Distinct Data Center Components</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; font-family: 'Press Start 2P', monospace; overflow: auto; }
+
+  .page { padding: 40px; }
+  .page h1 { font-size: 10px; color: #60a5fa; margin-bottom: 8px; }
+  .page p { font-size: 7px; color: #64748b; margin-bottom: 30px; }
+
+  /* Component showcase grid */
+  .showcase {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-bottom: 60px;
+  }
+  .showcase-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .showcase-label {
+    font-size: 6px;
+    color: #94a3b8;
+    letter-spacing: 1px;
+  }
+
+  /* Shared component base */
+  .comp {
+    position: relative;
+    image-rendering: pixelated;
+  }
+
+  /* Health states */
+  .health-healthy { filter: drop-shadow(0 0 6px rgba(34,197,94,0.4)); }
+  .health-strained { filter: drop-shadow(0 0 6px rgba(234,179,8,0.4)); }
+  .health-critical { filter: drop-shadow(0 0 8px rgba(239,68,68,0.5)); }
+  .health-failed { filter: drop-shadow(0 0 4px rgba(100,100,100,0.3)) grayscale(0.7) brightness(0.5); }
+
+  /* ========================================
+     CLIENT — CRT Monitor + Keyboard
+     ======================================== */
+  .client {
+    width: 72px;
+    height: 72px;
+  }
+  .client-screen {
+    width: 60px;
+    height: 40px;
+    background: #0a1628;
+    border: 3px solid #2563eb;
+    border-radius: 3px 3px 0 0;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+  .client-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(59,130,246,0.05) 2px, rgba(59,130,246,0.05) 4px);
+  }
+  .client-scanline {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: rgba(96,165,250,0.15);
+    animation: scan 3s linear infinite;
+  }
+  @keyframes scan { 0% { top: -2px; } 100% { top: 40px; } }
+  .client-cursor {
+    position: absolute;
+    left: 6px;
+    top: 8px;
+    width: 4px;
+    height: 8px;
+    background: #60a5fa;
+    animation: cursor-blink 1s step-end infinite;
+  }
+  @keyframes cursor-blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+  .client-text {
+    position: absolute;
+    left: 6px;
+    top: 20px;
+    font-size: 4px;
+    color: #3b82f6;
+    letter-spacing: 0.5px;
+  }
+  .client-stand {
+    width: 20px;
+    height: 6px;
+    background: #1e3a5f;
+    margin: 0 auto;
+    border: 1px solid #2563eb;
+  }
+  .client-base {
+    width: 40px;
+    height: 4px;
+    background: #1e3a5f;
+    margin: 0 auto;
+    border: 1px solid #2563eb;
+    border-radius: 0 0 2px 2px;
+  }
+  .client-keyboard {
+    width: 50px;
+    height: 8px;
+    background: #0f2440;
+    border: 2px solid #1e3a5f;
+    margin: 3px auto 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 0 3px;
+  }
+  .key {
+    width: 3px;
+    height: 3px;
+    background: #2563eb;
+    opacity: 0.6;
+  }
+
+  /* ========================================
+     SERVER — Classic Rack Units
+     ======================================== */
+  .server {
+    width: 72px;
+  }
+  .server-unit {
+    width: 64px;
+    height: 18px;
+    background: #1a1040;
+    border: 2px solid #7c3aed;
+    margin: 0 auto 2px;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    gap: 3px;
+  }
+  .server-led {
+    width: 4px;
+    height: 4px;
+  }
+  .server-led.on { background: #a78bfa; box-shadow: 0 0 4px #a78bfa; }
+  .server-led.act { background: #22c55e; box-shadow: 0 0 3px #22c55e; animation: led-flicker 0.15s infinite; }
+  @keyframes led-flicker { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .server-vent {
+    flex: 1;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, #2a1860 0px, #2a1860 2px, #110830 2px, #110830 4px);
+  }
+  .server-handle {
+    width: 2px;
+    height: 10px;
+    background: #555;
+    border-radius: 1px;
+  }
+
+  /* ========================================
+     LOAD BALANCER — Wide Network Switch
+     ======================================== */
+  .loadbalancer {
+    width: 88px;
+  }
+  .lb-body {
+    width: 84px;
+    height: 28px;
+    background: linear-gradient(180deg, #0a2a35 0%, #061820 100%);
+    border: 2px solid #0891b2;
+    margin: 0 auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 3px 4px;
+    gap: 3px;
+  }
+  .lb-port-row {
+    display: flex;
+    gap: 2px;
+    justify-content: center;
+  }
+  .lb-port {
+    width: 6px;
+    height: 5px;
+    background: #0a1a20;
+    border: 1px solid #0891b2;
+  }
+  .lb-port.active {
+    background: #22d3ee;
+    box-shadow: 0 0 3px #22d3ee;
+    animation: port-blink 0.8s ease-in-out infinite;
+  }
+  .lb-port.active:nth-child(2n) { animation-delay: 0.4s; }
+  @keyframes port-blink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .lb-arrow {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 8px;
+    color: #22d3ee;
+    opacity: 0.6;
+  }
+
+  /* ========================================
+     DATABASE — Disk Cylinder / Platter Stack
+     ======================================== */
+  .database {
+    width: 72px;
+  }
+  .db-cylinder {
+    width: 52px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .db-top {
+    width: 52px;
+    height: 10px;
+    background: #3a2a0f;
+    border: 2px solid #d97706;
+    border-radius: 50%;
+    position: relative;
+    z-index: 3;
+  }
+  .db-top-inner {
+    width: 30px;
+    height: 5px;
+    background: #1f1507;
+    border: 1px solid #b45309;
+    border-radius: 50%;
+    margin: 1px auto;
+  }
+  .db-body {
+    width: 52px;
+    height: 36px;
+    background: linear-gradient(180deg, #3a2a0f 0%, #1f1507 30%, #2a1f0a 60%, #1f1507 100%);
+    border-left: 2px solid #d97706;
+    border-right: 2px solid #d97706;
+    border-bottom: 2px solid #d97706;
+    margin-top: -5px;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+  }
+  .db-platter {
+    width: 100%;
+    height: 1px;
+    background: #b45309;
+    opacity: 0.4;
+    margin-top: 8px;
+  }
+  .db-bottom {
+    width: 52px;
+    height: 8px;
+    background: #2a1f0a;
+    border: 2px solid #d97706;
+    border-radius: 0 0 4px 4px;
+    margin-top: 0;
+    position: relative;
+    z-index: 2;
+  }
+  .db-led-row {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+    margin-top: 2px;
+  }
+  .db-led {
+    width: 3px;
+    height: 3px;
+    background: #fbbf24;
+    box-shadow: 0 0 3px #fbbf24;
+    animation: led-flicker 0.3s infinite;
+  }
+  .db-led:nth-child(2) { animation-delay: 0.15s; }
+
+  /* ========================================
+     CACHE — Slim Memory Module + Lightning
+     ======================================== */
+  .cache {
+    width: 72px;
+  }
+  .cache-body {
+    width: 56px;
+    height: 22px;
+    background: linear-gradient(180deg, #0f3a2a 0%, #071f18 100%);
+    border: 2px solid #059669;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    gap: 2px;
+    position: relative;
+  }
+  .cache-chip {
+    width: 8px;
+    height: 12px;
+    background: #0a2e20;
+    border: 1px solid #10b981;
+  }
+  .cache-chip-pin {
+    width: 8px;
+    height: 2px;
+    background: #059669;
+    opacity: 0.5;
+    margin-top: 1px;
+  }
+  .cache-bolt {
+    position: absolute;
+    right: 6px;
+    top: 2px;
+    font-size: 12px;
+    color: #34d399;
+    text-shadow: 0 0 8px #34d399;
+    animation: bolt-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes bolt-pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+  .cache-speed-lines {
+    width: 56px;
+    height: 4px;
+    margin: 2px auto 0;
+    display: flex;
+    gap: 2px;
+    justify-content: center;
+  }
+  .speed-line {
+    width: 8px;
+    height: 2px;
+    background: #34d399;
+    opacity: 0.4;
+    animation: speed-dash 0.6s linear infinite;
+  }
+  .speed-line:nth-child(2) { animation-delay: 0.2s; }
+  .speed-line:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes speed-dash { 0% { opacity: 0.2; } 50% { opacity: 0.7; } 100% { opacity: 0.2; } }
+
+  /* ========================================
+     CDN — Satellite Dish + Small Rack
+     ======================================== */
+  .cdn {
+    width: 72px;
+  }
+  .cdn-dish {
+    width: 32px;
+    height: 18px;
+    border: 2px solid #0ea5e9;
+    border-radius: 50% 50% 0 0;
+    margin: 0 auto;
+    position: relative;
+    background: linear-gradient(180deg, transparent 0%, rgba(14,165,233,0.1) 100%);
+  }
+  .cdn-dish-inner {
+    width: 12px;
+    height: 8px;
+    border: 1px solid #0ea5e9;
+    border-radius: 50% 50% 0 0;
+    margin: 4px auto 0;
+    opacity: 0.5;
+  }
+  .cdn-mast {
+    width: 4px;
+    height: 10px;
+    background: #0c4a6e;
+    border: 1px solid #0ea5e9;
+    margin: 0 auto;
+  }
+  .cdn-signal {
+    position: absolute;
+    top: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: #38bdf8;
+    box-shadow: 0 0 6px #38bdf8;
+    animation: signal-ping 2s ease-out infinite;
+  }
+  @keyframes signal-ping {
+    0% { box-shadow: 0 0 4px #38bdf8; }
+    50% { box-shadow: 0 0 12px #38bdf8, 0 0 24px rgba(56,189,248,0.3); }
+    100% { box-shadow: 0 0 4px #38bdf8; }
+  }
+  .cdn-base {
+    width: 48px;
+    height: 14px;
+    background: linear-gradient(180deg, #0c3a50 0%, #071f2a 100%);
+    border: 2px solid #0ea5e9;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+  .cdn-globe {
+    font-size: 8px;
+    opacity: 0.7;
+  }
+
+  /* ========================================
+     MESSAGE QUEUE — Buffer Display Unit
+     ======================================== */
+  .messagequeue {
+    width: 72px;
+  }
+  .mq-body {
+    width: 64px;
+    height: 20px;
+    background: linear-gradient(180deg, #3a1f0f 0%, #1f1007 100%);
+    border: 2px solid #ea580c;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    position: relative;
+  }
+  .mq-display {
+    width: 64px;
+    height: 16px;
+    margin: 2px auto 0;
+    background: #0a0500;
+    border: 2px solid #7c2d12;
+    display: flex;
+    align-items: center;
+    padding: 0 3px;
+    gap: 2px;
+    overflow: hidden;
+  }
+  .mq-slot {
+    width: 6px;
+    height: 8px;
+    border: 1px solid #7c2d12;
+    flex-shrink: 0;
+  }
+  .mq-slot.filled {
+    background: #fb923c;
+    box-shadow: 0 0 3px #fb923c;
+    border-color: #ea580c;
+  }
+  .mq-slot.filling {
+    background: #fb923c;
+    opacity: 0.4;
+    animation: fill-pulse 0.5s ease-in-out infinite;
+  }
+  @keyframes fill-pulse { 0%,100% { opacity: 0.2; } 50% { opacity: 0.6; } }
+  .mq-arrow-in {
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fb923c;
+    font-size: 6px;
+  }
+  .mq-arrow-out {
+    position: absolute;
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #fb923c;
+    font-size: 6px;
+  }
+  .mq-drain-indicator {
+    width: 64px;
+    height: 3px;
+    margin: 2px auto 0;
+    background: #1f1007;
+    border: 1px solid #7c2d12;
+    overflow: hidden;
+  }
+  .mq-drain-bar {
+    height: 100%;
+    width: 60%;
+    background: linear-gradient(90deg, #ea580c, #fb923c);
+    animation: drain-flow 1.5s linear infinite;
+  }
+  @keyframes drain-flow { 0% { transform: translateX(-40%); } 100% { transform: translateX(80%); } }
+
+  /* ========================================
+     RATE LIMITER — Traffic Light / Gate
+     ======================================== */
+  .ratelimiter {
+    width: 72px;
+  }
+  .rl-body {
+    width: 48px;
+    height: 14px;
+    background: linear-gradient(180deg, #3a0f2a 0%, #1f0715 100%);
+    border: 2px solid #db2777;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .rl-gate {
+    width: 48px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .rl-barrier {
+    width: 48px;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, #db2777 0px, #db2777 4px, #1f0715 4px, #1f0715 8px);
+    margin: 2px auto;
+  }
+  .rl-light-housing {
+    width: 18px;
+    height: 38px;
+    background: #1a0a15;
+    border: 2px solid #db2777;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 3px;
+    border-radius: 2px;
+  }
+  .rl-light {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid #333;
+  }
+  .rl-light.red-on {
+    background: #ef4444;
+    box-shadow: 0 0 6px #ef4444;
+  }
+  .rl-light.red-off {
+    background: #3a1515;
+  }
+  .rl-light.green-on {
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+  }
+  .rl-light.green-off {
+    background: #153a15;
+  }
+  .rl-light.yellow-on {
+    background: #eab308;
+    box-shadow: 0 0 6px #eab308;
+  }
+  .rl-counter {
+    width: 48px;
+    height: 10px;
+    background: #0a0508;
+    border: 1px solid #581c3f;
+    margin: 2px auto 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .rl-counter-text {
+    font-size: 5px;
+    color: #f472b6;
+    letter-spacing: 0.5px;
+  }
+
+  /* ========================================
+     FULL SCENE
+     ======================================== */
+  .scene {
+    position: relative;
+    width: 1120px;
+    height: 550px;
+    background: #111127;
+    border: 4px solid #252550;
+    overflow: hidden;
+  }
+  .scene-floor {
+    position: absolute;
+    inset: 32px 0 0 0;
+    background-image:
+      linear-gradient(45deg, #13132a 25%, transparent 25%),
+      linear-gradient(-45deg, #13132a 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #13132a 75%),
+      linear-gradient(-45deg, transparent 75%, #13132a 75%);
+    background-size: 40px 40px;
+    background-position: 0 0, 0 20px, 20px -20px, -20px 0;
+    background-color: #0f0f25;
+    opacity: 0.5;
+  }
+  .scene .scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 6px);
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* Scene HUD */
+  .scene-hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 32px;
+    background: rgba(0,0,0,0.85);
+    border-bottom: 3px solid #252550;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 20px;
+    z-index: 90;
+  }
+  .scene-hud .h-item { display: flex; align-items: center; gap: 6px; }
+  .scene-hud .h-lbl { font-size: 6px; color: #4a5568; }
+  .scene-hud .h-val { font-size: 7px; color: #68d391; text-shadow: 0 0 6px #68d391; }
+  .scene-hud .h-val.y { color: #fbbf24; text-shadow: 0 0 6px #fbbf24; }
+  .scene-hud .h-bar { width: 60px; height: 8px; background: #1a1a30; border: 1px solid #333; }
+  .scene-hud .h-bar-fill { height: 100%; background: #22c55e; }
+
+  /* Scene cables */
+  .scene .cable-h {
+    position: absolute;
+    height: 4px;
+    background: linear-gradient(180deg, #252540, #1a1a35);
+    border-top: 1px solid #333355;
+    border-bottom: 1px solid #111125;
+    z-index: 5;
+  }
+  .scene .cable-v {
+    position: absolute;
+    width: 4px;
+    background: linear-gradient(90deg, #252540, #1a1a35);
+    border-left: 1px solid #333355;
+    border-right: 1px solid #111125;
+    z-index: 5;
+  }
+
+  /* Scene packets */
+  .scene .pkt {
+    position: absolute;
+    width: 8px;
+    height: 4px;
+    z-index: 20;
+  }
+  .scene .pkt.rd { background: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+  .scene .pkt.wr { background: #818cf8; box-shadow: 0 0 6px #818cf8; }
+  .scene .pkt.rs { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+
+  /* Scene components (positioned absolutely) */
+  .scene .comp-pos { position: absolute; z-index: 10; }
+  .scene .comp-label {
+    text-align: center;
+    font-size: 5px;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+    text-shadow: 0 0 6px currentColor;
+  }
+  .scene .comp-stat {
+    text-align: center;
+    font-size: 5px;
+    color: #6b8;
+    background: rgba(0,0,0,0.7);
+    padding: 1px 4px;
+    margin-top: 2px;
+    border: 1px solid #234;
+  }
+
+  /* Scene event banner */
+  .scene-event {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(234,179,8,0.1);
+    border: 2px solid #fbbf24;
+    padding: 6px 16px;
+    font-size: 6px;
+    color: #fbbf24;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-shadow: 0 0 4px #fbbf24;
+  }
+  .scene-event .evt-dot {
+    width: 6px;
+    height: 6px;
+    background: #fbbf24;
+    animation: blink 0.8s infinite;
+  }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>COMPONENT REFERENCE — ALL 8 TYPES</h1>
+<p>Each component has a unique silhouette. Even without labels, shape tells you what it is.</p>
+
+<!-- ====== SHOWCASE ====== -->
+<div class="showcase">
+
+  <!-- CLIENT -->
+  <div class="showcase-item">
+    <div class="comp client health-healthy">
+      <div class="client-screen">
+        <div class="client-scanline"></div>
+        <div class="client-cursor"></div>
+        <div class="client-text">GET /r/abc123</div>
+      </div>
+      <div class="client-stand"></div>
+      <div class="client-base"></div>
+      <div class="client-keyboard">
+        <div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div>
+        <div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div>
+        <div class="key"></div><div class="key"></div>
+      </div>
+    </div>
+    <div class="showcase-label">CLIENT</div>
+  </div>
+
+  <!-- SERVER -->
+  <div class="showcase-item">
+    <div class="comp server health-strained">
+      <div class="server-unit">
+        <div class="server-led act"></div>
+        <div class="server-led on"></div>
+        <div class="server-vent"></div>
+        <div class="server-handle"></div>
+      </div>
+      <div class="server-unit">
+        <div class="server-led act"></div>
+        <div class="server-led on"></div>
+        <div class="server-vent"></div>
+        <div class="server-handle"></div>
+      </div>
+      <div class="server-unit">
+        <div class="server-led on"></div>
+        <div class="server-led" style="background:#333;"></div>
+        <div class="server-vent"></div>
+        <div class="server-handle"></div>
+      </div>
+    </div>
+    <div class="showcase-label">SERVER</div>
+  </div>
+
+  <!-- LOAD BALANCER -->
+  <div class="showcase-item">
+    <div class="comp loadbalancer health-healthy">
+      <div class="lb-body">
+        <div class="lb-port-row">
+          <div class="lb-port active"></div>
+          <div class="lb-port active"></div>
+          <div class="lb-port active"></div>
+          <div class="lb-port active"></div>
+          <div class="lb-port"></div>
+          <div class="lb-port"></div>
+          <div class="lb-port"></div>
+          <div class="lb-port"></div>
+        </div>
+        <div class="lb-port-row">
+          <div class="lb-port active"></div>
+          <div class="lb-port active"></div>
+          <div class="lb-port"></div>
+          <div class="lb-port"></div>
+          <div class="lb-port"></div>
+          <div class="lb-port"></div>
+          <div class="lb-port"></div>
+          <div class="lb-port"></div>
+        </div>
+      </div>
+    </div>
+    <div class="showcase-label">LOAD BALANCER</div>
+  </div>
+
+  <!-- DATABASE -->
+  <div class="showcase-item">
+    <div class="comp database health-healthy">
+      <div class="db-cylinder">
+        <div class="db-top">
+          <div class="db-top-inner"></div>
+        </div>
+        <div class="db-body">
+          <div class="db-platter"></div>
+          <div class="db-platter"></div>
+          <div class="db-platter"></div>
+        </div>
+        <div class="db-bottom">
+          <div class="db-led-row">
+            <div class="db-led"></div>
+            <div class="db-led"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="showcase-label">DATABASE</div>
+  </div>
+
+  <!-- CACHE -->
+  <div class="showcase-item">
+    <div class="comp cache health-healthy">
+      <div class="cache-body">
+        <div class="cache-chip"></div>
+        <div class="cache-chip"></div>
+        <div class="cache-chip"></div>
+        <div class="cache-bolt">⚡</div>
+      </div>
+      <div class="cache-speed-lines">
+        <div class="speed-line"></div>
+        <div class="speed-line"></div>
+        <div class="speed-line"></div>
+      </div>
+    </div>
+    <div class="showcase-label">CACHE</div>
+  </div>
+
+  <!-- CDN -->
+  <div class="showcase-item">
+    <div class="comp cdn health-healthy">
+      <div class="cdn-dish">
+        <div class="cdn-dish-inner"></div>
+        <div class="cdn-signal"></div>
+      </div>
+      <div class="cdn-mast"></div>
+      <div class="cdn-base">
+        <div class="cdn-globe">🌐</div>
+      </div>
+    </div>
+    <div class="showcase-label">CDN</div>
+  </div>
+
+  <!-- MESSAGE QUEUE -->
+  <div class="showcase-item">
+    <div class="comp messagequeue health-healthy">
+      <div class="mq-body">
+        <div class="mq-arrow-in">►</div>
+        <div class="mq-arrow-out">►</div>
+      </div>
+      <div class="mq-display">
+        <div class="mq-slot filled"></div>
+        <div class="mq-slot filled"></div>
+        <div class="mq-slot filled"></div>
+        <div class="mq-slot filling"></div>
+        <div class="mq-slot"></div>
+        <div class="mq-slot"></div>
+        <div class="mq-slot"></div>
+      </div>
+      <div class="mq-drain-indicator">
+        <div class="mq-drain-bar"></div>
+      </div>
+    </div>
+    <div class="showcase-label">MSG QUEUE</div>
+  </div>
+
+  <!-- RATE LIMITER -->
+  <div class="showcase-item">
+    <div class="comp ratelimiter health-healthy">
+      <div class="rl-gate">
+        <div class="rl-light-housing">
+          <div class="rl-light red-off"></div>
+          <div class="rl-light yellow-on"></div>
+          <div class="rl-light green-on"></div>
+        </div>
+        <div class="rl-barrier"></div>
+        <div class="rl-counter">
+          <span class="rl-counter-text">342/400</span>
+        </div>
+      </div>
+    </div>
+    <div class="showcase-label">RATE LIMITER</div>
+  </div>
+
+</div>
+
+<!-- ====== FULL SCENE ====== -->
+<h1>FULL SCENE — URL SHORTENER (3-STAR ARCHITECTURE)</h1>
+<p>Client → Cache → Load Balancer → Server × 2 → Database</p>
+
+<div class="scene">
+  <div class="scene-floor"></div>
+  <div class="scanlines"></div>
+
+  <!-- HUD -->
+  <div class="scene-hud">
+    <div class="h-item"><span class="h-lbl">SYS</span><span class="h-val">ONLINE</span></div>
+    <div class="h-item">
+      <span class="h-lbl">BUDGET</span>
+      <div class="h-bar"><div class="h-bar-fill" style="width:72%"></div></div>
+      <span class="h-val">$165</span>
+    </div>
+    <div class="h-item"><span class="h-lbl">UPTIME</span><span class="h-val">98.29%</span></div>
+    <div class="h-item"><span class="h-lbl">LATENCY</span><span class="h-val">48ms</span></div>
+    <div class="h-item"><span class="h-lbl">REQS</span><span class="h-val">847</span></div>
+    <div class="h-item"><span class="h-lbl">T-</span><span class="h-val y">42s</span></div>
+  </div>
+
+  <!-- Event -->
+  <div class="scene-event">
+    <div class="evt-dot"></div>
+    VIRAL LINK! — Traffic surging 3x
+  </div>
+
+  <!-- Client -->
+  <div class="comp-pos" style="left: 30px; top: 180px;">
+    <div class="comp client health-healthy" style="transform: scale(0.85);">
+      <div class="client-screen">
+        <div class="client-scanline"></div>
+        <div class="client-cursor"></div>
+        <div class="client-text">GET /r/abc123</div>
+      </div>
+      <div class="client-stand"></div>
+      <div class="client-base"></div>
+      <div class="client-keyboard">
+        <div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div><div class="key"></div>
+      </div>
+    </div>
+    <div class="comp-label" style="color: #60a5fa;">CLIENT</div>
+    <div class="comp-stat">4.00 req/s</div>
+  </div>
+
+  <!-- Cache -->
+  <div class="comp-pos" style="left: 185px; top: 210px;">
+    <div class="comp cache health-healthy" style="transform: scale(0.85);">
+      <div class="cache-body">
+        <div class="cache-chip"></div>
+        <div class="cache-chip"></div>
+        <div class="cache-chip"></div>
+        <div class="cache-bolt">⚡</div>
+      </div>
+      <div class="cache-speed-lines">
+        <div class="speed-line"></div><div class="speed-line"></div><div class="speed-line"></div>
+      </div>
+    </div>
+    <div class="comp-label" style="color: #34d399;">CACHE</div>
+    <div class="comp-stat">hit: 71%</div>
+  </div>
+
+  <!-- Load Balancer -->
+  <div class="comp-pos" style="left: 335px; top: 205px;">
+    <div class="comp loadbalancer health-healthy" style="transform: scale(0.85);">
+      <div class="lb-body">
+        <div class="lb-port-row">
+          <div class="lb-port active"></div><div class="lb-port active"></div><div class="lb-port active"></div><div class="lb-port active"></div>
+          <div class="lb-port"></div><div class="lb-port"></div><div class="lb-port"></div><div class="lb-port"></div>
+        </div>
+        <div class="lb-port-row">
+          <div class="lb-port active"></div><div class="lb-port active"></div><div class="lb-port"></div><div class="lb-port"></div>
+          <div class="lb-port"></div><div class="lb-port"></div><div class="lb-port"></div><div class="lb-port"></div>
+        </div>
+      </div>
+    </div>
+    <div class="comp-label" style="color: #22d3ee;">LOAD BAL</div>
+    <div class="comp-stat">3.00 req/s</div>
+  </div>
+
+  <!-- Server 1 (strained) -->
+  <div class="comp-pos" style="left: 520px; top: 100px;">
+    <div class="comp server health-strained" style="transform: scale(0.85);">
+      <div class="server-unit">
+        <div class="server-led act"></div><div class="server-led on"></div><div class="server-vent"></div><div class="server-handle"></div>
+      </div>
+      <div class="server-unit">
+        <div class="server-led act"></div><div class="server-led on"></div><div class="server-vent"></div><div class="server-handle"></div>
+      </div>
+      <div class="server-unit">
+        <div class="server-led on"></div><div class="server-led" style="background:#333"></div><div class="server-vent"></div><div class="server-handle"></div>
+      </div>
+    </div>
+    <div class="comp-label" style="color: #eab308;">SERVER 1</div>
+    <div class="comp-stat">67.23ms ▲</div>
+  </div>
+
+  <!-- Server 2 (healthy) -->
+  <div class="comp-pos" style="left: 520px; top: 310px;">
+    <div class="comp server health-healthy" style="transform: scale(0.85);">
+      <div class="server-unit">
+        <div class="server-led act"></div><div class="server-led on"></div><div class="server-vent"></div><div class="server-handle"></div>
+      </div>
+      <div class="server-unit">
+        <div class="server-led on"></div><div class="server-led on"></div><div class="server-vent"></div><div class="server-handle"></div>
+      </div>
+      <div class="server-unit">
+        <div class="server-led on"></div><div class="server-led" style="background:#333"></div><div class="server-vent"></div><div class="server-handle"></div>
+      </div>
+    </div>
+    <div class="comp-label" style="color: #a78bfa;">SERVER 2</div>
+    <div class="comp-stat">22.50ms</div>
+  </div>
+
+  <!-- Database -->
+  <div class="comp-pos" style="left: 710px; top: 170px;">
+    <div class="comp database health-healthy" style="transform: scale(0.85);">
+      <div class="db-cylinder">
+        <div class="db-top"><div class="db-top-inner"></div></div>
+        <div class="db-body">
+          <div class="db-platter"></div><div class="db-platter"></div><div class="db-platter"></div>
+        </div>
+        <div class="db-bottom">
+          <div class="db-led-row"><div class="db-led"></div><div class="db-led"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="comp-label" style="color: #fbbf24;">DATABASE</div>
+    <div class="comp-stat">45.00ms</div>
+  </div>
+
+  <!-- Cables -->
+  <div class="cable-h" style="left: 100px; top: 232px; width: 88px;"></div>
+  <div class="cable-h" style="left: 258px; top: 232px; width: 82px;"></div>
+  <div class="cable-h" style="left: 418px; top: 222px; width: 40px;"></div>
+  <div class="cable-v" style="left: 458px; top: 155px; height: 70px;"></div>
+  <div class="cable-h" style="left: 458px; top: 155px; width: 62px;"></div>
+  <div class="cable-v" style="left: 458px; top: 222px; height: 130px;"></div>
+  <div class="cable-h" style="left: 458px; top: 352px; width: 62px;"></div>
+  <div class="cable-h" style="left: 590px; top: 155px; width: 50px;"></div>
+  <div class="cable-v" style="left: 640px; top: 155px; height: 80px;"></div>
+  <div class="cable-h" style="left: 640px; top: 232px; width: 72px;"></div>
+  <div class="cable-h" style="left: 590px; top: 352px; width: 50px;"></div>
+  <div class="cable-v" style="left: 640px; top: 232px; height: 124px;"></div>
+
+  <!-- Packets -->
+  <div class="pkt rd" style="left: 120px; top: 229px;"></div>
+  <div class="pkt rd" style="left: 145px; top: 229px;"></div>
+  <div class="pkt wr" style="left: 135px; top: 236px;"></div>
+  <div class="pkt rs" style="left: 160px; top: 236px;"></div>
+
+  <div class="pkt rd" style="left: 280px; top: 229px;"></div>
+  <div class="pkt rs" style="left: 300px; top: 236px;"></div>
+  <div class="pkt rs" style="left: 315px; top: 236px;"></div>
+
+  <div class="pkt rd" style="left: 470px; top: 180px;"></div>
+  <div class="pkt wr" style="left: 475px; top: 290px;"></div>
+  <div class="pkt rs" style="left: 468px; top: 200px;"></div>
+
+  <div class="pkt rd" style="left: 610px; top: 152px;"></div>
+  <div class="pkt rs" style="left: 655px; top: 200px;"></div>
+</div>
+
+</div>
+</body>
+</html>

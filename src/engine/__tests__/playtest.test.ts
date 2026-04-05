@@ -5,7 +5,7 @@ import { ScoringEngine } from '../ScoringEngine';
 import { urlShortener } from '../../levels/beginner/url-shortener';
 import { pasteBin } from '../../levels/beginner/paste-bin';
 import { chatApp } from '../../levels/beginner/chat-app';
-import type { LevelDefinition, ComponentType, GameState } from '../types';
+import type { LevelDefinition, ComponentType } from '../types';
 
 const scorer = new ScoringEngine();
 

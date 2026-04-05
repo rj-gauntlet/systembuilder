@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SystemBuilder Mockup 4 — Health States</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a1a; font-family: 'Press Start 2P', monospace; overflow: auto; padding: 40px; }
+
+  h1 { font-size: 10px; color: #60a5fa; margin-bottom: 8px; }
+  h2 { font-size: 8px; color: #94a3b8; margin: 30px 0 12px; }
+  p { font-size: 7px; color: #64748b; margin-bottom: 20px; }
+
+  .state-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+  .state-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 90px;
+  }
+  .state-label {
+    font-size: 6px;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 2px;
+  }
+  .state-label.healthy { color: #22c55e; background: rgba(34,197,94,0.1); border: 1px solid #166534; }
+  .state-label.strained { color: #eab308; background: rgba(234,179,8,0.1); border: 1px solid #854d0e; }
+  .state-label.critical { color: #ef4444; background: rgba(239,68,68,0.1); border: 1px solid #991b1b; }
+  .state-label.failed { color: #6b7280; background: rgba(107,114,128,0.1); border: 1px solid #374151; }
+
+  /* ========== SHARED ========== */
+  .comp { position: relative; image-rendering: pixelated; }
+
+  /* Health filters */
+  .h-healthy { filter: drop-shadow(0 0 6px rgba(34,197,94,0.3)); }
+  .h-strained { filter: drop-shadow(0 0 6px rgba(234,179,8,0.4)); }
+  .h-critical { filter: drop-shadow(0 0 10px rgba(239,68,68,0.5)); animation: critical-pulse 0.8s ease-in-out infinite; }
+  .h-failed { filter: drop-shadow(0 0 3px rgba(100,100,100,0.2)) brightness(0.35) saturate(0.2); }
+
+  @keyframes critical-pulse {
+    0%,100% { filter: drop-shadow(0 0 10px rgba(239,68,68,0.5)); }
+    50% { filter: drop-shadow(0 0 18px rgba(239,68,68,0.8)); }
+  }
+
+  /* LED states */
+  .led { width: 4px; height: 4px; }
+  .led-g { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+  .led-y { background: #eab308; box-shadow: 0 0 4px #eab308; }
+  .led-r { background: #ef4444; box-shadow: 0 0 4px #ef4444; }
+  .led-r-blink { background: #ef4444; box-shadow: 0 0 6px #ef4444; animation: blink-fast 0.4s infinite; }
+  .led-act { background: #22c55e; box-shadow: 0 0 3px #22c55e; animation: flicker 0.15s infinite; }
+  .led-act-y { background: #eab308; box-shadow: 0 0 3px #eab308; animation: flicker 0.1s infinite; }
+  .led-act-r { background: #ef4444; box-shadow: 0 0 3px #ef4444; animation: flicker 0.08s infinite; }
+  .led-off { background: #222; }
+  .led-dead { background: #1a0505; }
+
+  @keyframes blink-fast { 0%,100% { opacity: 1; } 50% { opacity: 0.15; } }
+  @keyframes flicker { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .vent {
+    flex: 1;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, #222 0px, #222 2px, #0a0a1a 2px, #0a0a1a 4px);
+  }
+  .vent-dim { opacity: 0.2; }
+  .handle { width: 2px; height: 10px; background: #555; border-radius: 1px; }
+  .handle-dead { background: #222; }
+
+  /* ========== SERVER ========== */
+  .server-unit {
+    width: 64px;
+    height: 18px;
+    border: 2px solid;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    gap: 3px;
+    margin-bottom: 2px;
+  }
+  .su-healthy { background: #1a1040; border-color: #7c3aed; }
+  .su-strained { background: #2a1a10; border-color: #ca8a04; }
+  .su-critical { background: #2a1010; border-color: #dc2626; }
+  .su-failed { background: #0a0a0a; border-color: #333; }
+
+  /* ========== CLIENT ========== */
+  .client-screen {
+    width: 60px;
+    height: 40px;
+    border: 3px solid;
+    border-radius: 3px 3px 0 0;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+  .cs-healthy { background: #0a1628; border-color: #2563eb; }
+  .cs-strained { background: #1a1a08; border-color: #ca8a04; }
+  .cs-critical { background: #1a0808; border-color: #dc2626; }
+  .cs-failed { background: #080808; border-color: #333; }
+
+  .client-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(100,100,100,0.03) 2px, rgba(100,100,100,0.03) 4px);
+  }
+  .scanline {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: rgba(96,165,250,0.15);
+    animation: scan 3s linear infinite;
+  }
+  .scanline-dead { display: none; }
+  @keyframes scan { 0% { top: -2px; } 100% { top: 40px; } }
+  .cursor {
+    position: absolute;
+    left: 6px; top: 8px;
+    width: 4px; height: 8px;
+    animation: cblink 1s step-end infinite;
+  }
+  .cursor-g { background: #60a5fa; }
+  .cursor-y { background: #eab308; }
+  .cursor-r { background: #ef4444; animation: cblink 0.3s step-end infinite; }
+  .cursor-dead { display: none; }
+  @keyframes cblink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+  .screen-text {
+    position: absolute;
+    left: 6px; top: 20px;
+    font-size: 4px;
+    letter-spacing: 0.5px;
+  }
+  .st-blue { color: #3b82f6; }
+  .st-yellow { color: #ca8a04; }
+  .st-red { color: #ef4444; }
+  .st-dead { color: #333; }
+  .client-stand { width: 20px; height: 6px; margin: 0 auto; }
+  .client-base { width: 40px; height: 4px; margin: 0 auto; border-radius: 0 0 2px 2px; }
+  .cstand-healthy { background: #1e3a5f; border: 1px solid #2563eb; }
+  .cstand-strained { background: #3a3a1e; border: 1px solid #ca8a04; }
+  .cstand-critical { background: #3a1e1e; border: 1px solid #dc2626; }
+  .cstand-failed { background: #111; border: 1px solid #333; }
+  .keyboard {
+    width: 50px; height: 8px;
+    border: 2px solid;
+    margin: 3px auto 0;
+    display: flex; align-items: center; justify-content: center;
+    gap: 2px; padding: 0 3px;
+  }
+  .kb-healthy { background: #0f2440; border-color: #1e3a5f; }
+  .kb-failed { background: #080808; border-color: #222; }
+  .key { width: 3px; height: 3px; }
+  .key-on { background: #2563eb; opacity: 0.6; }
+  .key-dead { background: #1a1a1a; opacity: 0.2; }
+
+  /* ========== DATABASE ========== */
+  .db-top {
+    width: 52px; height: 10px;
+    border: 2px solid;
+    border-radius: 50%;
+    margin: 0 auto;
+    position: relative; z-index: 3;
+  }
+  .dbt-healthy { background: #3a2a0f; border-color: #d97706; }
+  .dbt-strained { background: #3a3a0f; border-color: #ca8a04; }
+  .dbt-critical { background: #3a0f0f; border-color: #dc2626; }
+  .dbt-failed { background: #0f0f0f; border-color: #333; }
+  .db-top-inner {
+    width: 30px; height: 5px;
+    border-radius: 50%;
+    margin: 1px auto;
+  }
+  .dbti-healthy { background: #1f1507; border: 1px solid #b45309; }
+  .dbti-failed { background: #0a0a0a; border: 1px solid #222; }
+  .db-body {
+    width: 52px; height: 36px;
+    border-left: 2px solid; border-right: 2px solid; border-bottom: 2px solid;
+    margin-top: -5px;
+    position: relative; z-index: 1;
+    overflow: hidden;
+  }
+  .dbb-healthy { background: linear-gradient(180deg, #3a2a0f, #1f1507, #2a1f0a, #1f1507); border-color: #d97706; }
+  .dbb-strained { background: linear-gradient(180deg, #3a3a0f, #1f1f07, #2a2a0a, #1f1f07); border-color: #ca8a04; }
+  .dbb-critical { background: linear-gradient(180deg, #3a0f0f, #1f0707, #2a0a0a, #1f0707); border-color: #dc2626; }
+  .dbb-failed { background: linear-gradient(180deg, #111, #0a0a0a, #0d0d0d, #0a0a0a); border-color: #333; }
+  .db-platter { width: 100%; height: 1px; margin-top: 8px; }
+  .platter-healthy { background: #b45309; opacity: 0.4; }
+  .platter-failed { background: #333; opacity: 0.15; }
+  .db-bottom {
+    width: 52px; height: 8px;
+    border: 2px solid;
+    border-radius: 0 0 4px 4px;
+    z-index: 2;
+    margin: 0 auto;
+  }
+  .dbbot-healthy { background: #2a1f0a; border-color: #d97706; }
+  .dbbot-failed { background: #0d0d0d; border-color: #333; }
+  .db-led-row { display: flex; gap: 3px; justify-content: center; margin-top: 2px; }
+
+  /* ========== CACHE ========== */
+  .cache-body {
+    width: 56px; height: 22px;
+    border: 2px solid;
+    margin: 0 auto;
+    display: flex; align-items: center;
+    padding: 0 4px; gap: 2px;
+    position: relative;
+  }
+  .cab-healthy { background: linear-gradient(180deg, #0f3a2a, #071f18); border-color: #059669; }
+  .cab-strained { background: linear-gradient(180deg, #2a3a0f, #181f07); border-color: #ca8a04; }
+  .cab-critical { background: linear-gradient(180deg, #3a0f0f, #1f0707); border-color: #dc2626; }
+  .cab-failed { background: linear-gradient(180deg, #111, #0a0a0a); border-color: #333; }
+  .cache-chip { width: 8px; height: 12px; border: 1px solid; }
+  .chip-healthy { background: #0a2e20; border-color: #10b981; }
+  .chip-failed { background: #0a0a0a; border-color: #222; }
+  .cache-bolt {
+    position: absolute; right: 6px; top: 2px;
+    font-size: 12px;
+  }
+  .bolt-healthy { color: #34d399; text-shadow: 0 0 8px #34d399; animation: bolt-p 1.5s ease-in-out infinite; }
+  .bolt-strained { color: #eab308; text-shadow: 0 0 8px #eab308; animation: bolt-p 0.8s ease-in-out infinite; }
+  .bolt-critical { color: #ef4444; text-shadow: 0 0 8px #ef4444; animation: bolt-p 0.3s ease-in-out infinite; }
+  .bolt-dead { color: #333; text-shadow: none; }
+  @keyframes bolt-p { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+  .speed-lines { width: 56px; height: 4px; margin: 2px auto 0; display: flex; gap: 2px; justify-content: center; }
+  .speed-line { width: 8px; height: 2px; animation: sdash 0.6s linear infinite; }
+  .sl-healthy { background: #34d399; opacity: 0.4; }
+  .sl-strained { background: #eab308; opacity: 0.4; }
+  .sl-critical { background: #ef4444; opacity: 0.6; }
+  .sl-dead { background: #222; opacity: 0.1; animation: none; }
+  .speed-line:nth-child(2) { animation-delay: 0.2s; }
+  .speed-line:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes sdash { 0% { opacity: 0.2; } 50% { opacity: 0.7; } 100% { opacity: 0.2; } }
+
+  /* ========== CDN ========== */
+  .cdn-dish {
+    width: 32px; height: 18px;
+    border: 2px solid;
+    border-radius: 50% 50% 0 0;
+    margin: 0 auto;
+    position: relative;
+  }
+  .cdish-healthy { border-color: #0ea5e9; background: linear-gradient(180deg, transparent, rgba(14,165,233,0.1)); }
+  .cdish-failed { border-color: #333; background: linear-gradient(180deg, transparent, rgba(50,50,50,0.05)); }
+  .cdn-dish-inner { width: 12px; height: 8px; border-radius: 50% 50% 0 0; margin: 4px auto 0; }
+  .cdi-healthy { border: 1px solid #0ea5e9; opacity: 0.5; }
+  .cdi-failed { border: 1px solid #222; opacity: 0.2; }
+  .cdn-signal {
+    position: absolute; top: -4px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 0;
+  }
+  .csig-healthy { background: #38bdf8; box-shadow: 0 0 6px #38bdf8; animation: sig-p 2s ease-out infinite; }
+  .csig-strained { background: #eab308; box-shadow: 0 0 6px #eab308; animation: sig-p 1s ease-out infinite; }
+  .csig-critical { background: #ef4444; box-shadow: 0 0 6px #ef4444; animation: blink-fast 0.5s infinite; }
+  .csig-dead { background: #222; box-shadow: none; animation: none; }
+  @keyframes sig-p { 0% { box-shadow: 0 0 4px currentColor; } 50% { box-shadow: 0 0 14px currentColor; } 100% { box-shadow: 0 0 4px currentColor; } }
+  .cdn-mast { width: 4px; height: 10px; margin: 0 auto; }
+  .cmast-healthy { background: #0c4a6e; border: 1px solid #0ea5e9; }
+  .cmast-failed { background: #111; border: 1px solid #222; }
+  .cdn-base { width: 48px; height: 14px; border: 2px solid; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+  .cbase-healthy { background: linear-gradient(180deg, #0c3a50, #071f2a); border-color: #0ea5e9; }
+  .cbase-failed { background: linear-gradient(180deg, #111, #0a0a0a); border-color: #333; }
+
+  /* ========== LOAD BALANCER ========== */
+  .lb-body {
+    width: 84px; height: 28px;
+    border: 2px solid;
+    margin: 0 auto;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 3px 4px; gap: 3px;
+  }
+  .lbb-healthy { background: linear-gradient(180deg, #0a2a35, #061820); border-color: #0891b2; }
+  .lbb-strained { background: linear-gradient(180deg, #2a2a0a, #18180a); border-color: #ca8a04; }
+  .lbb-critical { background: linear-gradient(180deg, #2a0a0a, #180505); border-color: #dc2626; }
+  .lbb-failed { background: linear-gradient(180deg, #0d0d0d, #080808); border-color: #333; }
+  .lb-port-row { display: flex; gap: 2px; justify-content: center; }
+  .lb-port { width: 6px; height: 5px; border: 1px solid; }
+  .lbp-empty { background: #0a1a20; border-color: #0891b2; }
+  .lbp-active { background: #22d3ee; box-shadow: 0 0 3px #22d3ee; border-color: #22d3ee; animation: pblink 0.8s ease-in-out infinite; }
+  .lbp-active-y { background: #eab308; box-shadow: 0 0 3px #eab308; border-color: #eab308; animation: pblink 0.5s ease-in-out infinite; }
+  .lbp-active-r { background: #ef4444; box-shadow: 0 0 3px #ef4444; border-color: #ef4444; animation: pblink 0.3s ease-in-out infinite; }
+  .lbp-dead { background: #0a0a0a; border-color: #222; }
+  @keyframes pblink { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ========== MESSAGE QUEUE ========== */
+  .mq-body { width: 64px; height: 20px; border: 2px solid; margin: 0 auto; display: flex; align-items: center; padding: 0 4px; position: relative; }
+  .mqb-healthy { background: linear-gradient(180deg, #3a1f0f, #1f1007); border-color: #ea580c; }
+  .mqb-failed { background: linear-gradient(180deg, #111, #0a0a0a); border-color: #333; }
+  .mq-display { width: 64px; height: 16px; margin: 2px auto 0; border: 2px solid; display: flex; align-items: center; padding: 0 3px; gap: 2px; }
+  .mqd-healthy { background: #0a0500; border-color: #7c2d12; }
+  .mqd-failed { background: #050505; border-color: #1a1a1a; }
+  .mq-slot { width: 6px; height: 8px; border: 1px solid; flex-shrink: 0; }
+  .mqs-empty { border-color: #7c2d12; }
+  .mqs-filled { background: #fb923c; box-shadow: 0 0 3px #fb923c; border-color: #ea580c; }
+  .mqs-dead { border-color: #1a1a1a; }
+  .mqs-dead-fill { background: #333; border-color: #1a1a1a; }
+  .mq-drain { width: 64px; height: 3px; margin: 2px auto 0; border: 1px solid; overflow: hidden; }
+  .mqdr-healthy { background: #1f1007; border-color: #7c2d12; }
+  .mqdr-failed { background: #080808; border-color: #1a1a1a; }
+  .mq-drain-bar { height: 100%; }
+  .mqdrb-healthy { width: 60%; background: linear-gradient(90deg, #ea580c, #fb923c); animation: drain 1.5s linear infinite; }
+  .mqdrb-dead { width: 0%; }
+  @keyframes drain { 0% { transform: translateX(-40%); } 100% { transform: translateX(80%); } }
+  .mq-arrow { position: absolute; top: 50%; transform: translateY(-50%); font-size: 6px; }
+  .mqa-healthy { color: #fb923c; }
+  .mqa-dead { color: #333; }
+
+  /* ========== RATE LIMITER ========== */
+  .rl-light-housing {
+    width: 18px; height: 38px;
+    border: 2px solid;
+    margin: 0 auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; padding: 3px; border-radius: 2px;
+  }
+  .rlh-healthy { background: #1a0a15; border-color: #db2777; }
+  .rlh-failed { background: #0a0a0a; border-color: #222; }
+  .rl-light { width: 8px; height: 8px; border-radius: 50%; border: 1px solid #333; }
+  .rll-red-on { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+  .rll-red-off { background: #3a1515; }
+  .rll-yellow-on { background: #eab308; box-shadow: 0 0 6px #eab308; }
+  .rll-yellow-off { background: #3a3a15; }
+  .rll-green-on { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+  .rll-green-off { background: #153a15; }
+  .rll-dead { background: #111; }
+  .rl-barrier { width: 48px; height: 4px; margin: 2px auto; }
+  .rlbar-healthy { background: repeating-linear-gradient(90deg, #db2777 0px, #db2777 4px, #1f0715 4px, #1f0715 8px); }
+  .rlbar-strained { background: repeating-linear-gradient(90deg, #ca8a04 0px, #ca8a04 4px, #1f1f07 4px, #1f1f07 8px); }
+  .rlbar-critical { background: repeating-linear-gradient(90deg, #dc2626 0px, #dc2626 4px, #1a0505 4px, #1a0505 8px); animation: blink-fast 0.5s infinite; }
+  .rlbar-dead { background: repeating-linear-gradient(90deg, #333 0px, #333 4px, #111 4px, #111 8px); }
+  .rl-counter { width: 48px; height: 10px; border: 1px solid; margin: 2px auto 0; display: flex; align-items: center; justify-content: center; }
+  .rlc-healthy { background: #0a0508; border-color: #581c3f; }
+  .rlc-failed { background: #050505; border-color: #1a1a1a; }
+  .rl-counter-text { font-size: 5px; letter-spacing: 0.5px; }
+  .rlct-healthy { color: #f472b6; }
+  .rlct-dead { color: #333; }
+</style>
+</head>
+<body>
+
+<h1>HEALTH STATES — ALL COMPONENTS</h1>
+<p>Each component in 4 states: Healthy, Strained, Critical, Failed. Unique visual treatment per state per component.</p>
+
+<!-- ========== SERVER ========== -->
+<h2>SERVER</h2>
+<div class="state-row">
+  <div class="state-col">
+    <span class="state-label healthy">HEALTHY</span>
+    <div class="comp h-healthy">
+      <div class="server-unit su-healthy"><div class="led led-act"></div><div class="led led-g"></div><div class="vent"></div><div class="handle"></div></div>
+      <div class="server-unit su-healthy"><div class="led led-act"></div><div class="led led-g"></div><div class="vent"></div><div class="handle"></div></div>
+      <div class="server-unit su-healthy"><div class="led led-g"></div><div class="led led-off"></div><div class="vent"></div><div class="handle"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label strained">STRAINED</span>
+    <div class="comp h-strained">
+      <div class="server-unit su-strained"><div class="led led-act-y"></div><div class="led led-y"></div><div class="vent"></div><div class="handle"></div></div>
+      <div class="server-unit su-strained"><div class="led led-act-y"></div><div class="led led-y"></div><div class="vent"></div><div class="handle"></div></div>
+      <div class="server-unit su-strained"><div class="led led-y"></div><div class="led led-g"></div><div class="vent"></div><div class="handle"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label critical">CRITICAL</span>
+    <div class="comp h-critical">
+      <div class="server-unit su-critical"><div class="led led-act-r"></div><div class="led led-r"></div><div class="vent"></div><div class="handle"></div></div>
+      <div class="server-unit su-critical"><div class="led led-act-r"></div><div class="led led-r"></div><div class="vent"></div><div class="handle"></div></div>
+      <div class="server-unit su-critical"><div class="led led-r"></div><div class="led led-r"></div><div class="vent"></div><div class="handle"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label failed">FAILED</span>
+    <div class="comp h-failed">
+      <div class="server-unit su-failed"><div class="led led-r-blink"></div><div class="led led-dead"></div><div class="vent vent-dim"></div><div class="handle handle-dead"></div></div>
+      <div class="server-unit su-failed"><div class="led led-r-blink"></div><div class="led led-dead"></div><div class="vent vent-dim"></div><div class="handle handle-dead"></div></div>
+      <div class="server-unit su-failed"><div class="led led-dead"></div><div class="led led-dead"></div><div class="vent vent-dim"></div><div class="handle handle-dead"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CLIENT ========== -->
+<h2>CLIENT</h2>
+<div class="state-row">
+  <div class="state-col">
+    <span class="state-label healthy">HEALTHY</span>
+    <div class="comp h-healthy">
+      <div class="client-screen cs-healthy">
+        <div class="scanline"></div>
+        <div class="cursor cursor-g"></div>
+        <div class="screen-text st-blue">GET /r/abc123</div>
+      </div>
+      <div class="client-stand cstand-healthy"></div>
+      <div class="client-base cstand-healthy"></div>
+      <div class="keyboard kb-healthy"><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label strained">STRAINED</span>
+    <div class="comp h-strained">
+      <div class="client-screen cs-strained">
+        <div class="scanline"></div>
+        <div class="cursor cursor-y"></div>
+        <div class="screen-text st-yellow">WARN: HIGH LOAD</div>
+      </div>
+      <div class="client-stand cstand-strained"></div>
+      <div class="client-base cstand-strained"></div>
+      <div class="keyboard kb-healthy"><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label critical">CRITICAL</span>
+    <div class="comp h-critical">
+      <div class="client-screen cs-critical">
+        <div class="scanline"></div>
+        <div class="cursor cursor-r"></div>
+        <div class="screen-text st-red">ERR: TIMEOUT</div>
+      </div>
+      <div class="client-stand cstand-critical"></div>
+      <div class="client-base cstand-critical"></div>
+      <div class="keyboard kb-healthy"><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div><div class="key key-on"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label failed">FAILED</span>
+    <div class="comp h-failed">
+      <div class="client-screen cs-failed">
+        <div class="scanline scanline-dead"></div>
+        <div class="cursor cursor-dead"></div>
+        <div class="screen-text st-dead">NO SIGNAL</div>
+      </div>
+      <div class="client-stand cstand-failed"></div>
+      <div class="client-base cstand-failed"></div>
+      <div class="keyboard kb-failed"><div class="key key-dead"></div><div class="key key-dead"></div><div class="key key-dead"></div><div class="key key-dead"></div><div class="key key-dead"></div><div class="key key-dead"></div><div class="key key-dead"></div><div class="key key-dead"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== DATABASE ========== -->
+<h2>DATABASE</h2>
+<div class="state-row">
+  <div class="state-col">
+    <span class="state-label healthy">HEALTHY</span>
+    <div class="comp h-healthy">
+      <div class="db-top dbt-healthy"><div class="db-top-inner dbti-healthy"></div></div>
+      <div class="db-body dbb-healthy"><div class="db-platter platter-healthy"></div><div class="db-platter platter-healthy"></div><div class="db-platter platter-healthy"></div></div>
+      <div class="db-bottom dbbot-healthy"><div class="db-led-row"><div class="led led-g" style="width:3px;height:3px;box-shadow:0 0 3px #22c55e"></div><div class="led led-act" style="width:3px;height:3px"></div></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label strained">STRAINED</span>
+    <div class="comp h-strained">
+      <div class="db-top dbt-strained"><div class="db-top-inner dbti-healthy"></div></div>
+      <div class="db-body dbb-strained"><div class="db-platter platter-healthy"></div><div class="db-platter platter-healthy"></div><div class="db-platter platter-healthy"></div></div>
+      <div class="db-bottom dbbot-healthy" style="border-color:#ca8a04"><div class="db-led-row"><div class="led led-y" style="width:3px;height:3px;box-shadow:0 0 3px #eab308"></div><div class="led led-act-y" style="width:3px;height:3px"></div></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label critical">CRITICAL</span>
+    <div class="comp h-critical">
+      <div class="db-top dbt-critical"><div class="db-top-inner dbti-healthy" style="border-color:#991b1b"></div></div>
+      <div class="db-body dbb-critical"><div class="db-platter platter-healthy" style="background:#991b1b"></div><div class="db-platter platter-healthy" style="background:#991b1b"></div><div class="db-platter platter-healthy" style="background:#991b1b"></div></div>
+      <div class="db-bottom dbbot-healthy" style="background:#2a0a0a;border-color:#dc2626"><div class="db-led-row"><div class="led led-r" style="width:3px;height:3px;box-shadow:0 0 3px #ef4444"></div><div class="led led-act-r" style="width:3px;height:3px"></div></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label failed">FAILED</span>
+    <div class="comp h-failed">
+      <div class="db-top dbt-failed"><div class="db-top-inner dbti-failed"></div></div>
+      <div class="db-body dbb-failed"><div class="db-platter platter-failed"></div><div class="db-platter platter-failed"></div><div class="db-platter platter-failed"></div></div>
+      <div class="db-bottom dbbot-failed"><div class="db-led-row"><div class="led led-r-blink" style="width:3px;height:3px"></div><div class="led led-dead" style="width:3px;height:3px"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CACHE ========== -->
+<h2>CACHE</h2>
+<div class="state-row">
+  <div class="state-col">
+    <span class="state-label healthy">HEALTHY</span>
+    <div class="comp h-healthy">
+      <div class="cache-body cab-healthy"><div class="cache-chip chip-healthy"></div><div class="cache-chip chip-healthy"></div><div class="cache-chip chip-healthy"></div><span class="cache-bolt bolt-healthy">⚡</span></div>
+      <div class="speed-lines"><div class="speed-line sl-healthy"></div><div class="speed-line sl-healthy"></div><div class="speed-line sl-healthy"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label strained">STRAINED</span>
+    <div class="comp h-strained">
+      <div class="cache-body cab-strained"><div class="cache-chip chip-healthy" style="border-color:#ca8a04"></div><div class="cache-chip chip-healthy" style="border-color:#ca8a04"></div><div class="cache-chip chip-healthy" style="border-color:#ca8a04"></div><span class="cache-bolt bolt-strained">⚡</span></div>
+      <div class="speed-lines"><div class="speed-line sl-strained"></div><div class="speed-line sl-strained"></div><div class="speed-line sl-strained"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label critical">CRITICAL</span>
+    <div class="comp h-critical">
+      <div class="cache-body cab-critical"><div class="cache-chip chip-healthy" style="border-color:#dc2626"></div><div class="cache-chip chip-healthy" style="border-color:#dc2626"></div><div class="cache-chip chip-healthy" style="border-color:#dc2626"></div><span class="cache-bolt bolt-critical">⚡</span></div>
+      <div class="speed-lines"><div class="speed-line sl-critical"></div><div class="speed-line sl-critical"></div><div class="speed-line sl-critical"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label failed">FAILED</span>
+    <div class="comp h-failed">
+      <div class="cache-body cab-failed"><div class="cache-chip chip-failed"></div><div class="cache-chip chip-failed"></div><div class="cache-chip chip-failed"></div><span class="cache-bolt bolt-dead">⚡</span></div>
+      <div class="speed-lines"><div class="speed-line sl-dead"></div><div class="speed-line sl-dead"></div><div class="speed-line sl-dead"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CDN ========== -->
+<h2>CDN</h2>
+<div class="state-row">
+  <div class="state-col">
+    <span class="state-label healthy">HEALTHY</span>
+    <div class="comp h-healthy">
+      <div class="cdn-dish cdish-healthy"><div class="cdn-dish-inner cdi-healthy"></div><div class="cdn-signal csig-healthy"></div></div>
+      <div class="cdn-mast cmast-healthy"></div>
+      <div class="cdn-base cbase-healthy"><span style="font-size:8px;opacity:0.7">🌐</span></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label strained">STRAINED</span>
+    <div class="comp h-strained">
+      <div class="cdn-dish cdish-healthy" style="border-color:#ca8a04"><div class="cdn-dish-inner cdi-healthy" style="border-color:#ca8a04"></div><div class="cdn-signal csig-strained"></div></div>
+      <div class="cdn-mast cmast-healthy" style="border-color:#ca8a04;background:#3a3a0a"></div>
+      <div class="cdn-base cbase-healthy" style="border-color:#ca8a04"><span style="font-size:8px;opacity:0.7">🌐</span></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label critical">CRITICAL</span>
+    <div class="comp h-critical">
+      <div class="cdn-dish cdish-healthy" style="border-color:#dc2626"><div class="cdn-dish-inner cdi-healthy" style="border-color:#dc2626"></div><div class="cdn-signal csig-critical"></div></div>
+      <div class="cdn-mast cmast-healthy" style="border-color:#dc2626;background:#3a0a0a"></div>
+      <div class="cdn-base cbase-healthy" style="border-color:#dc2626"><span style="font-size:8px;opacity:0.7">🌐</span></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label failed">FAILED</span>
+    <div class="comp h-failed">
+      <div class="cdn-dish cdish-failed"><div class="cdn-dish-inner cdi-failed"></div><div class="cdn-signal csig-dead"></div></div>
+      <div class="cdn-mast cmast-failed"></div>
+      <div class="cdn-base cbase-failed"><span style="font-size:8px;opacity:0.2">🌐</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== LOAD BALANCER ========== -->
+<h2>LOAD BALANCER</h2>
+<div class="state-row">
+  <div class="state-col">
+    <span class="state-label healthy">HEALTHY</span>
+    <div class="comp h-healthy">
+      <div class="lb-body lbb-healthy">
+        <div class="lb-port-row"><div class="lb-port lbp-active"></div><div class="lb-port lbp-active"></div><div class="lb-port lbp-active"></div><div class="lb-port lbp-active"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div></div>
+        <div class="lb-port-row"><div class="lb-port lbp-active"></div><div class="lb-port lbp-active"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label strained">STRAINED</span>
+    <div class="comp h-strained">
+      <div class="lb-body lbb-strained">
+        <div class="lb-port-row"><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div></div>
+        <div class="lb-port-row"><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-active-y"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div><div class="lb-port lbp-empty"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label critical">CRITICAL</span>
+    <div class="comp h-critical">
+      <div class="lb-body lbb-critical">
+        <div class="lb-port-row"><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div></div>
+        <div class="lb-port-row"><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div><div class="lb-port lbp-active-r"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label failed">FAILED</span>
+    <div class="comp h-failed">
+      <div class="lb-body lbb-failed">
+        <div class="lb-port-row"><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div></div>
+        <div class="lb-port-row"><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div><div class="lb-port lbp-dead"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MESSAGE QUEUE ========== -->
+<h2>MESSAGE QUEUE</h2>
+<div class="state-row">
+  <div class="state-col">
+    <span class="state-label healthy">HEALTHY</span>
+    <div class="comp h-healthy">
+      <div class="mq-body mqb-healthy"><span class="mq-arrow mqa-healthy" style="left:-8px">►</span><span class="mq-arrow mqa-healthy" style="right:-8px">►</span></div>
+      <div class="mq-display mqd-healthy"><div class="mq-slot mqs-filled"></div><div class="mq-slot mqs-filled"></div><div class="mq-slot mqs-empty"></div><div class="mq-slot mqs-empty"></div><div class="mq-slot mqs-empty"></div><div class="mq-slot mqs-empty"></div><div class="mq-slot mqs-empty"></div></div>
+      <div class="mq-drain mqdr-healthy"><div class="mq-drain-bar mqdrb-healthy"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label strained">STRAINED</span>
+    <div class="comp h-strained">
+      <div class="mq-body mqb-healthy" style="border-color:#ca8a04"><span class="mq-arrow" style="left:-8px;color:#ca8a04">►</span><span class="mq-arrow" style="right:-8px;color:#ca8a04">►</span></div>
+      <div class="mq-display mqd-healthy" style="border-color:#854d0e"><div class="mq-slot mqs-filled"></div><div class="mq-slot mqs-filled"></div><div class="mq-slot mqs-filled"></div><div class="mq-slot mqs-filled"></div><div class="mq-slot mqs-filled"></div><div class="mq-slot mqs-empty"></div><div class="mq-slot mqs-empty"></div></div>
+      <div class="mq-drain mqdr-healthy" style="border-color:#854d0e"><div class="mq-drain-bar mqdrb-healthy" style="background:linear-gradient(90deg,#ca8a04,#eab308)"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label critical">CRITICAL</span>
+    <div class="comp h-critical">
+      <div class="mq-body mqb-healthy" style="border-color:#dc2626"><span class="mq-arrow" style="left:-8px;color:#dc2626">►</span><span class="mq-arrow" style="right:-8px;color:#dc2626">►</span></div>
+      <div class="mq-display mqd-healthy" style="border-color:#991b1b"><div class="mq-slot mqs-filled" style="background:#ef4444;box-shadow:0 0 3px #ef4444"></div><div class="mq-slot mqs-filled" style="background:#ef4444;box-shadow:0 0 3px #ef4444"></div><div class="mq-slot mqs-filled" style="background:#ef4444;box-shadow:0 0 3px #ef4444"></div><div class="mq-slot mqs-filled" style="background:#ef4444;box-shadow:0 0 3px #ef4444"></div><div class="mq-slot mqs-filled" style="background:#ef4444;box-shadow:0 0 3px #ef4444"></div><div class="mq-slot mqs-filled" style="background:#ef4444;box-shadow:0 0 3px #ef4444"></div><div class="mq-slot mqs-filled" style="background:#ef4444;box-shadow:0 0 3px #ef4444"></div></div>
+      <div class="mq-drain mqdr-healthy" style="border-color:#991b1b"><div class="mq-drain-bar mqdrb-healthy" style="width:90%;background:linear-gradient(90deg,#dc2626,#ef4444)"></div></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label failed">FAILED</span>
+    <div class="comp h-failed">
+      <div class="mq-body mqb-failed"><span class="mq-arrow mqa-dead" style="left:-8px">►</span><span class="mq-arrow mqa-dead" style="right:-8px">►</span></div>
+      <div class="mq-display mqd-failed"><div class="mq-slot mqs-dead-fill"></div><div class="mq-slot mqs-dead-fill"></div><div class="mq-slot mqs-dead-fill"></div><div class="mq-slot mqs-dead"></div><div class="mq-slot mqs-dead"></div><div class="mq-slot mqs-dead"></div><div class="mq-slot mqs-dead"></div></div>
+      <div class="mq-drain mqdr-failed"><div class="mq-drain-bar mqdrb-dead"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RATE LIMITER ========== -->
+<h2>RATE LIMITER</h2>
+<div class="state-row">
+  <div class="state-col">
+    <span class="state-label healthy">HEALTHY</span>
+    <div class="comp h-healthy">
+      <div class="rl-light-housing rlh-healthy">
+        <div class="rl-light rll-red-off"></div>
+        <div class="rl-light rll-yellow-off"></div>
+        <div class="rl-light rll-green-on"></div>
+      </div>
+      <div class="rl-barrier rlbar-healthy"></div>
+      <div class="rl-counter rlc-healthy"><span class="rl-counter-text rlct-healthy">142/400</span></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label strained">STRAINED</span>
+    <div class="comp h-strained">
+      <div class="rl-light-housing rlh-healthy" style="border-color:#ca8a04">
+        <div class="rl-light rll-red-off"></div>
+        <div class="rl-light rll-yellow-on"></div>
+        <div class="rl-light rll-green-off"></div>
+      </div>
+      <div class="rl-barrier rlbar-strained"></div>
+      <div class="rl-counter rlc-healthy" style="border-color:#854d0e"><span class="rl-counter-text" style="color:#eab308">318/400</span></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label critical">CRITICAL</span>
+    <div class="comp h-critical">
+      <div class="rl-light-housing rlh-healthy" style="border-color:#dc2626">
+        <div class="rl-light rll-red-on"></div>
+        <div class="rl-light rll-yellow-off"></div>
+        <div class="rl-light rll-green-off"></div>
+      </div>
+      <div class="rl-barrier rlbar-critical"></div>
+      <div class="rl-counter rlc-healthy" style="border-color:#991b1b"><span class="rl-counter-text" style="color:#ef4444">400/400</span></div>
+    </div>
+  </div>
+  <div class="state-col">
+    <span class="state-label failed">FAILED</span>
+    <div class="comp h-failed">
+      <div class="rl-light-housing rlh-failed">
+        <div class="rl-light rll-dead"></div>
+        <div class="rl-light rll-dead"></div>
+        <div class="rl-light rll-dead"></div>
+      </div>
+      <div class="rl-barrier rlbar-dead"></div>
+      <div class="rl-counter rlc-failed"><span class="rl-counter-text rlct-dead">---/---</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
