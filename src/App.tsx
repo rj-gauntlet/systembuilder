@@ -5,7 +5,10 @@ import { Briefing } from './ui/screens/Briefing';
 import { GameScreen } from './ui/screens/GameScreen';
 import { Debrief } from './ui/screens/Debrief';
 import { Settings } from './ui/screens/Settings';
+import { Tutorial } from './ui/components/Tutorial';
 import { ProgressStore } from './storage/ProgressStore';
+
+const TUTORIAL_KEY = 'systembuilder_tutorial_done';
 
 type Screen =
   | { type: 'menu' }
@@ -21,7 +24,13 @@ function getStore() { return new ProgressStore(); }
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ type: 'menu' });
   const [gameKey, setGameKey] = useState(0);
+  const [showTutorial, setShowTutorial] = useState(() => !localStorage.getItem(TUTORIAL_KEY));
   const store = getStore();
+
+  const completeTutorial = () => {
+    localStorage.setItem(TUTORIAL_KEY, '1');
+    setShowTutorial(false);
+  };
 
   function handleLevelComplete(level: LevelDefinition, score: Score) {
     store.saveLevelResult(level.id, score);
@@ -61,12 +70,21 @@ export default function App() {
         <div style={styles.menuStars}>
           Total Stars: {store.getProgress().totalStars}
         </div>
-        <button
-          onClick={() => setScreen({ type: 'settings' })}
-          style={styles.settingsButton}
-        >
-          Settings
-        </button>
+        <div style={styles.menuBottomRow}>
+          <button
+            onClick={() => setScreen({ type: 'settings' })}
+            style={styles.settingsButton}
+          >
+            Settings
+          </button>
+          <button
+            onClick={() => setShowTutorial(true)}
+            style={styles.settingsButton}
+          >
+            Tutorial
+          </button>
+        </div>
+        {showTutorial && <Tutorial onComplete={completeTutorial} />}
       </div>
     );
   }
@@ -189,8 +207,12 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#fbbf24',
     fontWeight: 700,
   },
+  menuBottomRow: {
+    display: 'flex',
+    gap: 12,
+    marginTop: 12,
+  },
   settingsButton: {
-    marginTop: 8,
     padding: '8px 20px',
     border: '1px solid #334155',
     borderRadius: 8,

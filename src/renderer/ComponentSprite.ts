@@ -6,10 +6,10 @@ import { getPortPositions, PORT_RADIUS } from './PortSystem';
 const COMPONENT_SIZE = GRID_CELL_SIZE * 0.8;
 
 const HEALTH_COLORS: Record<HealthStatus, number> = {
-  healthy: 0x22c55e,   // green
-  strained: 0xeab308,  // yellow
-  critical: 0xef4444,  // red
-  failed: 0x6b7280,    // gray
+  healthy: 0x22c55e,
+  strained: 0xeab308,
+  critical: 0xef4444,
+  failed: 0x6b7280,
 };
 
 const TYPE_COLORS: Record<string, number> = {
@@ -28,17 +28,32 @@ const TYPE_LABELS: Record<string, string> = {
   server: 'SRV',
   'load-balancer': 'LB',
   database: 'DB',
-  cache: 'CHE',
+  cache: 'CACHE',
   cdn: 'CDN',
   'message-queue': 'MQ',
   'rate-limiter': 'RL',
 };
 
+const TYPE_ICONS: Record<string, string> = {
+  client: '\u{1F4BB}',       // laptop
+  server: '\u{1F5A5}',       // desktop
+  'load-balancer': '\u{2696}', // scales
+  database: '\u{1F4BE}',     // floppy/disk
+  cache: '\u{26A1}',         // lightning
+  cdn: '\u{1F310}',          // globe
+  'message-queue': '\u{1F4E8}', // envelope
+  'rate-limiter': '\u{1F6E1}',  // shield
+};
+
 const labelStyle = new TextStyle({
   fontFamily: 'monospace',
-  fontSize: 11,
+  fontSize: 9,
   fill: 0xffffff,
   fontWeight: 'bold',
+});
+
+const iconStyle = new TextStyle({
+  fontSize: 20,
 });
 
 export class ComponentSprite {
@@ -46,6 +61,7 @@ export class ComponentSprite {
   private body: Graphics;
   private healthRing: Graphics;
   private label: Text;
+  private icon: Text;
   private portGraphics: Graphics;
 
   componentId: string;
@@ -71,9 +87,16 @@ export class ComponentSprite {
     this.portGraphics = new Graphics();
     this.container.addChild(this.portGraphics);
 
-    // Label
+    // Icon (emoji)
+    this.icon = new Text({ text: TYPE_ICONS[component.type] ?? '?', style: iconStyle });
+    this.icon.anchor.set(0.5);
+    this.icon.position.set(0, -4);
+    this.container.addChild(this.icon);
+
+    // Label below icon
     this.label = new Text({ text: TYPE_LABELS[component.type] ?? '?', style: labelStyle });
     this.label.anchor.set(0.5);
+    this.label.position.set(0, 16);
     this.container.addChild(this.label);
 
     this.drawBody(component);
@@ -87,9 +110,9 @@ export class ComponentSprite {
     const half = COMPONENT_SIZE / 2;
 
     this.body.clear();
-    this.body.roundRect(-half, -half, COMPONENT_SIZE, COMPONENT_SIZE, 8);
-    this.body.fill({ color, alpha: 0.9 });
-    this.body.stroke({ color: 0xffffff, width: 1, alpha: 0.3 });
+    this.body.roundRect(-half, -half, COMPONENT_SIZE, COMPONENT_SIZE, 10);
+    this.body.fill({ color, alpha: 0.15 });
+    this.body.stroke({ color, width: 2, alpha: 0.8 });
   }
 
   private drawPorts(component: Component): void {
@@ -99,13 +122,12 @@ export class ComponentSprite {
 
     this.portGraphics.clear();
     for (const port of ports) {
-      // Position relative to container center
       const rx = port.x - cx;
       const ry = port.y - cy;
       this.portGraphics.circle(rx, ry, PORT_RADIUS);
     }
-    this.portGraphics.fill({ color: 0xffffff, alpha: 0.6 });
-    this.portGraphics.stroke({ color: 0xffffff, width: 1, alpha: 0.8 });
+    this.portGraphics.fill({ color: 0xffffff, alpha: 0.5 });
+    this.portGraphics.stroke({ color: 0xffffff, width: 1, alpha: 0.7 });
   }
 
   updatePosition(component: Component): void {
@@ -120,8 +142,8 @@ export class ComponentSprite {
     const half = COMPONENT_SIZE / 2 + 3;
 
     this.healthRing.clear();
-    this.healthRing.roundRect(-half, -half, half * 2, half * 2, 10);
-    this.healthRing.stroke({ color, width: 2, alpha: 0.8 });
+    this.healthRing.roundRect(-half, -half, half * 2, half * 2, 12);
+    this.healthRing.stroke({ color, width: 2, alpha: 0.9 });
   }
 
   update(component: Component): void {
