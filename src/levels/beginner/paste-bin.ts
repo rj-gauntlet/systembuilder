@@ -17,7 +17,7 @@ export const pasteBin: LevelDefinition = {
     monthlyBudget: 350,
     expectedTraffic: '~150 requests/second, 80% reads',
   },
-  writeRatio: 0.2, // 80% reads — pastes are read many times, written once
+  writeRatio: 0.2,
   scriptedEvents: [
     {
       triggerTime: 25,
@@ -30,7 +30,17 @@ export const pasteBin: LevelDefinition = {
       },
     },
     {
-      triggerTime: 55,
+      triggerTime: 50,
+      event: {
+        id: '',
+        type: 'node-failure',
+        title: 'Server Overload!',
+        description: 'The viral traffic caused a server to crash.',
+        effects: [{ type: 'disable-component', targetComponentType: 'server', durationMs: 12000 }],
+      },
+    },
+    {
+      triggerTime: 70,
       event: {
         id: '',
         type: 'slow-query',
@@ -44,17 +54,20 @@ export const pasteBin: LevelDefinition = {
   ],
   randomEventPool: ['traffic-spike', 'viral-content', 'slow-query'],
   // 3-star: Client → CDN → Server → Cache → DB ($175)
-  // CDN intercepts 85% at the edge → avg ~34ms
+  // CDN + cache double-layer, handles viral + slow queries
   optimalBenchmark: {
-    uptime: 95,
-    avgLatency: 34,
+    uptime: 98,
+    avgLatency: 54,
     monthlyCost: 175,
     componentCount: 5,
   },
   starThresholds: {
-    oneStar:   { minUptime: 40, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
-    twoStar:   { minUptime: 65, maxLatency: 120, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 80, maxLatency: 65,  maxCostRatio: 175, mustSurvive: true },
+    // Minimal (Client→Server→DB): will fail server crash → low uptime
+    // CDN-only or Cache-only: better but single server = crash vulnerability
+    // Optimal (CDN→Server→Cache→DB): handles everything
+    oneStar:   { minUptime: 50, maxLatency: 150, maxCostRatio: 300, mustSurvive: false },
+    twoStar:   { minUptime: 88, maxLatency: 90,  maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 93, maxLatency: 65,  maxCostRatio: 175, mustSurvive: true },
   },
   simulationDuration: 90,
 };

@@ -17,7 +17,7 @@ export const chatApp: LevelDefinition = {
     monthlyBudget: 400,
     expectedTraffic: '~300 requests/second, 60% writes',
   },
-  writeRatio: 0.6, // 60% writes — chat is write-heavy
+  writeRatio: 0.6,
   scriptedEvents: [
     {
       triggerTime: 15,
@@ -30,7 +30,7 @@ export const chatApp: LevelDefinition = {
       },
     },
     {
-      triggerTime: 40,
+      triggerTime: 35,
       event: {
         id: '',
         type: 'ddos-attack',
@@ -62,18 +62,21 @@ export const chatApp: LevelDefinition = {
   ],
   randomEventPool: ['traffic-spike', 'ddos-attack', 'write-storm'],
   // 3-star: Client → RL → LB → Server ×2 → MQ → DB ($260)
-  // No caching shortcut — every request traverses the full chain
-  // MQ provides immediate ack but avg latency is higher (~100ms)
+  // RL handles DDoS, MQ buffers write storm, LB+2 servers for redundancy
   optimalBenchmark: {
-    uptime: 90,
-    avgLatency: 100,
+    uptime: 96,
+    avgLatency: 110,
     monthlyCost: 260,
     componentCount: 7,
   },
   starThresholds: {
-    oneStar:   { minUptime: 35, maxLatency: 250, maxCostRatio: 300, mustSurvive: false },
-    twoStar:   { minUptime: 55, maxLatency: 160, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 75, maxLatency: 120, maxCostRatio: 175, mustSurvive: true },
+    // Minimal (Client→Server→DB): hammered by DDoS + write storm → very low uptime
+    // No-MQ: can survive but writes back up → lower uptime + higher latency
+    // Budget (Client→RL→Server→MQ→DB): no redundancy, server crash kills it
+    // Optimal (RL→LB→2xSrv→MQ→DB): handles everything
+    oneStar:   { minUptime: 40, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
+    twoStar:   { minUptime: 90, maxLatency: 130, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 94, maxLatency: 115, maxCostRatio: 150, mustSurvive: true },
   },
   simulationDuration: 90,
 };

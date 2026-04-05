@@ -17,7 +17,7 @@ export const urlShortener: LevelDefinition = {
     monthlyBudget: 300,
     expectedTraffic: '~200 requests/second, 90% reads',
   },
-  writeRatio: 0.1, // 90% reads — URL redirects are read-heavy
+  writeRatio: 0.1,
   scriptedEvents: [
     {
       triggerTime: 20,
@@ -42,17 +42,20 @@ export const urlShortener: LevelDefinition = {
   ],
   randomEventPool: ['traffic-spike', 'slow-query'],
   // 3-star: Client → Cache → LB → Server ×2 → DB ($235)
-  // Cache at front intercepts 70% of reads → avg ~48ms
+  // Cache at front, redundant servers, ~98% uptime, ~53ms latency
   optimalBenchmark: {
-    uptime: 95,
-    avgLatency: 48,
+    uptime: 98,
+    avgLatency: 53,
     monthlyCost: 235,
     componentCount: 6,
   },
   starThresholds: {
-    oneStar:   { minUptime: 40, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
-    twoStar:   { minUptime: 65, maxLatency: 120, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 80, maxLatency: 75,  maxCostRatio: 175, mustSurvive: true },
+    // Minimal (Client→Server→DB): ~87% uptime, ~52ms, $130 → should get 1 star
+    // No-redundancy (Client→Cache→Server→DB): ~94% uptime, ~43ms, $155 → should get 2 stars
+    // Optimal (Client→Cache→LB→2xSrv→DB): ~98% uptime, ~53ms, $235 → should get 3 stars
+    oneStar:   { minUptime: 50, maxLatency: 150, maxCostRatio: 300, mustSurvive: false },
+    twoStar:   { minUptime: 88, maxLatency: 90,  maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 95, maxLatency: 75,  maxCostRatio: 150, mustSurvive: true },
   },
   simulationDuration: 90,
 };
