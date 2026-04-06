@@ -261,12 +261,16 @@ describe('Playtest: URL Shortener', () => {
     expect(results.length).toBe(urlArchitectures.length);
   });
 
-  it('3-star architecture gets 3 stars', () => {
-    expect(results[0].stars).toBe(3);
+  it('overkill (CDN+Cache) architecture gets 3 stars', () => {
+    expect(results[4].stars).toBe(3);
   });
 
-  it('minimal architecture gets fewer than 3 stars', () => {
-    expect(results[1].stars).toBeLessThan(3);
+  it('good architecture (no CDN) gets 2 stars', () => {
+    expect(results[0].stars).toBe(2);
+  });
+
+  it('minimal architecture gets 1 star', () => {
+    expect(results[1].stars).toBeLessThanOrEqual(1);
   });
 
   it('cache-at-front has lower avg latency than cache-at-back', () => {
