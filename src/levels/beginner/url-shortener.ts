@@ -41,22 +41,21 @@ export const urlShortener: LevelDefinition = {
     },
   ],
   randomEventPool: ['traffic-spike', 'slow-query'],
-  // 3-star: Client → CDN → Cache → LB → Server ×2 → DB ($255)
-  // Double caching layer + redundancy for max resilience
+  // 3-star: Client → Cache → LB → Server ×2 → DB ($235)
+  // Cache at front + redundant servers
   optimalBenchmark: {
     uptime: 95,
-    avgLatency: 47,
-    monthlyCost: 255,
-    componentCount: 7,
+    avgLatency: 55,
+    monthlyCost: 235,
+    componentCount: 6,
   },
   starThresholds: {
-    // Minimal (Srv→DB): ~60% → 1 star
+    // Minimal (Srv→DB): ~65% → 1 star
     // No-redundancy (Cache→Srv→DB): ~85% → 2 stars
-    // Good (Cache→LB→2xSrv→DB): ~85% → 2 stars
-    // Optimal (CDN→Cache→LB→2xSrv→DB): ~95% → 3 stars
+    // Optimal (Cache→LB→2xSrv→DB): ~95% → 3 stars
     oneStar:   { minUptime: 40, maxLatency: 200, maxCostRatio: 300, mustSurvive: false },
-    twoStar:   { minUptime: 70, maxLatency: 100, maxCostRatio: 200, mustSurvive: true },
-    threeStar: { minUptime: 91, maxLatency: 90,  maxCostRatio: 150, mustSurvive: true },
+    twoStar:   { minUptime: 75, maxLatency: 100, maxCostRatio: 200, mustSurvive: true },
+    threeStar: { minUptime: 90, maxLatency: 85,  maxCostRatio: 150, mustSurvive: true },
   },
   simulationDuration: 90,
 };
