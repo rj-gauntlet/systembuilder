@@ -7,7 +7,8 @@ import { HintToast } from '../components/HintToast';
 import { OpenAIProvider } from '../../ai/OpenAIProvider';
 import { HintEngine } from '../../hints/HintEngine';
 import { ProgressStore } from '../../storage/ProgressStore';
-import type { ComponentType, LevelDefinition, Score } from '../../engine/types';
+import type { ComponentType, LevelDefinition, Score, EventType } from '../../engine/types';
+import type { SimulationLoop } from '../../engine/SimulationLoop';
 import type { ActiveHint } from '../../hints/types';
 import { InputHandler } from '../../renderer/InputHandler';
 
@@ -27,6 +28,7 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
 
   const [, forceUpdate] = useState(0);
   const inputRef = useRef<InputHandler | null>(null);
+  const simLoopRef = useRef<SimulationLoop | null>(null);
   const [activeMode, setActiveMode] = useState<'select' | 'place' | 'connect'>('select');
   const [placingType, setPlacingType] = useState<ComponentType | null>(null);
   const [showChat, setShowChat] = useState(false);
@@ -91,6 +93,16 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
     setChatPrefill(`The hint system suggested: "${text}" — can you explain why this matters for my architecture?`);
     setShowChat(true);
   }, []);
+
+  const handleTriggerEvent = useCallback((type: EventType) => {
+    const loop = simLoopRef.current;
+    if (!loop) return;
+    const event = loop.eventSystem.createEvent(type);
+    engine.addEvent(event);
+    triggerUpdate();
+  }, [engine, triggerUpdate]);
+
+  const isSandbox = !level;
 
   const state = engine.getState();
   const simStatus = state.simulation.status;
@@ -180,10 +192,22 @@ export function GameScreen({ level, onExit, onComplete }: GameScreenProps) {
               engine={engine}
               onStateChange={triggerUpdate}
               inputHandlerRef={inputRef}
+              simLoopRef={simLoopRef}
               level={level}
             />
           </div>
           <HintToast hint={activeHint} onAskAboutThis={handleAskAboutThis} />
+          {isSandbox && simStatus === 'running' && (
+            <div style={styles.eventPanel}>
+              <span style={styles.eventPanelLabel}>Trigger Event:</span>
+              <button style={styles.eventBtn} onClick={() => handleTriggerEvent('traffic-spike')}>Traffic Spike</button>
+              <button style={styles.eventBtn} onClick={() => handleTriggerEvent('ddos-attack')}>DDoS Attack</button>
+              <button style={styles.eventBtn} onClick={() => handleTriggerEvent('node-failure')}>Node Failure</button>
+              <button style={styles.eventBtn} onClick={() => handleTriggerEvent('slow-query')}>Slow Queries</button>
+              <button style={styles.eventBtn} onClick={() => handleTriggerEvent('write-storm')}>Write Storm</button>
+              <button style={styles.eventBtn} onClick={() => handleTriggerEvent('viral-content')}>Viral Content</button>
+            </div>
+          )}
         </div>
         {showChat && (
           <ChatPanel
@@ -312,5 +336,38 @@ const styles: Record<string, React.CSSProperties> = {
   },
   canvasWrapper: {
     position: 'relative',
+  },
+  eventPanel: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 4,
+    background: 'rgba(15, 15, 35, 0.9)',
+    border: '1px solid #334155',
+    borderRadius: 8,
+    padding: '8px 10px',
+    zIndex: 10,
+  },
+  eventPanelLabel: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: '#94a3b8',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.5px',
+    marginBottom: 2,
+  },
+  eventBtn: {
+    padding: '5px 10px',
+    border: '1px solid #475569',
+    borderRadius: 5,
+    background: '#1e293b',
+    color: '#f87171',
+    fontWeight: 600,
+    fontSize: 11,
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+    fontFamily: 'Inter, sans-serif',
   },
 };

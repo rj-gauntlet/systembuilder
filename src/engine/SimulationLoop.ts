@@ -28,7 +28,7 @@ export interface SimulationContext {
 export class SimulationLoop {
   private accumulator = 0;
   private simTime = 0;
-  private eventSystem = new EventSystem();
+  readonly eventSystem = new EventSystem();
   private scoringEngine = new ScoringEngine();
   private level: LevelDefinition | null = null;
   private drainStartTime = 0;

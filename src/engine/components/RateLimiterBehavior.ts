@@ -2,32 +2,42 @@ import type { Component, Particle } from '../types';
 import type { SimulationContext } from '../SimulationLoop';
 import { getHealthyIncoming } from './routeUtils';
 
+// Per-component window tracking: counts weighted requests per 1-second window
 const windowCounters: Map<string, number> = new Map();
-const WINDOW_TICKS = 60;
-let tickCounter = 0;
+const windowStartTimes: Map<string, number> = new Map();
+const WINDOW_DURATION = 1; // 1 second window
 
 export function processRateLimiter(
   component: Component,
   particle: Particle,
   ctx: SimulationContext,
 ): void {
-  tickCounter++;
-
-  if (tickCounter % WINDOW_TICKS === 0) {
-    windowCounters.set(component.id, 0);
-  }
-
   if (particle.direction === 'request') {
+    const weight = particle.weight ?? 1;
+
+    // Reset window if 1 second has elapsed (based on simulation time)
+    const windowStart = windowStartTimes.get(component.id) ?? 0;
+    if (ctx.simTime - windowStart >= WINDOW_DURATION) {
+      windowCounters.set(component.id, 0);
+      windowStartTimes.set(component.id, ctx.simTime);
+    }
+
     const count = windowCounters.get(component.id) ?? 0;
 
-    if (count >= component.stats.throughputLimit) {
-      ctx.removeParticle(particle.id);
+    if (count + weight > component.stats.throughputLimit) {
+      // Throttled — rate limiter is doing its job.
+      // Don't count as a drop (these are intentionally rejected).
+      // Instead, remove from totalRequests so uptime isn't penalized.
       particle.status = 'dropped';
-      ctx.state.simulation.droppedRequests += particle.weight ?? 1;
+      particle.stuckInComponent = undefined;
+      ctx.state.simulation.totalRequests = Math.max(
+        0,
+        ctx.state.simulation.totalRequests - weight,
+      );
       return;
     }
 
-    windowCounters.set(component.id, count + 1);
+    windowCounters.set(component.id, count + weight);
 
     const outConns = ctx.getOutgoingConnections(component.id);
     if (outConns.length > 0) {
@@ -43,8 +53,13 @@ export function processRateLimiter(
         sourceComponentId: particle.sourceComponentId,
         createdAt: particle.createdAt,
         passedServer: particle.passedServer,
-        weight: particle.weight ?? 1,
+        weight,
       });
+    } else {
+      // No downstream — request lost
+      ctx.state.simulation.droppedRequests += weight;
+      particle.status = 'dropped';
+      particle.stuckInComponent = undefined;
     }
 
     component.stats.requestsPerSecond = Math.min(
@@ -68,6 +83,9 @@ export function processRateLimiter(
         passedServer: particle.passedServer,
         weight: particle.weight ?? 1,
       });
+    } else {
+      // No healthy upstream — response lost
+      ctx.state.simulation.droppedRequests += particle.weight ?? 1;
     }
   }
 }

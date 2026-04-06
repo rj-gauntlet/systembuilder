@@ -15,10 +15,11 @@ interface GameCanvasProps {
   engine: GameEngine;
   onStateChange: () => void;
   inputHandlerRef?: MutableRefObject<InputHandler | null>;
+  simLoopRef?: MutableRefObject<SimulationLoop | null>;
   level?: LevelDefinition;
 }
 
-export function GameCanvas({ engine, onStateChange, inputHandlerRef, level }: GameCanvasProps) {
+export function GameCanvas({ engine, onStateChange, inputHandlerRef, simLoopRef: simLoopRefProp, level }: GameCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<Application | null>(null);
   const inputRef = useRef<InputHandler | null>(null);
@@ -176,6 +177,7 @@ export function GameCanvas({ engine, onStateChange, inputHandlerRef, level }: Ga
       input.attachToStage(app.stage);
       inputRef.current = input;
       if (inputHandlerRef) inputHandlerRef.current = input;
+      if (simLoopRefProp) simLoopRefProp.current = simLoopRef.current;
 
       // Load level events if in level mode
       if (level) {
@@ -209,7 +211,7 @@ export function GameCanvas({ engine, onStateChange, inputHandlerRef, level }: Ga
         appRef.current = null;
       }
     };
-  }, [engine, syncVisuals, inputHandlerRef]);
+  }, [engine, syncVisuals, inputHandlerRef, simLoopRefProp]);
 
   return (
     <div

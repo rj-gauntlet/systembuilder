@@ -32,6 +32,9 @@ export function processCache(
           passedServer: particle.passedServer,
           weight: particle.weight ?? 1,
         });
+      } else {
+        // Dead-end cache — write has nowhere to go
+        ctx.state.simulation.droppedRequests += particle.weight ?? 1;
       }
       component.stats.requestsPerSecond = Math.min(
         component.stats.throughputLimit,
@@ -61,6 +64,9 @@ export function processCache(
           passedServer: particle.passedServer,
           weight: particle.weight ?? 1,
         });
+      } else {
+        // Connection deleted mid-flight — request lost
+        ctx.state.simulation.droppedRequests += particle.weight ?? 1;
       }
     } else {
       // Cache miss — forward downstream
@@ -80,6 +86,9 @@ export function processCache(
           passedServer: particle.passedServer,
           weight: particle.weight ?? 1,
         });
+      } else {
+        // Dead-end cache — miss has nowhere to go
+        ctx.state.simulation.droppedRequests += particle.weight ?? 1;
       }
     }
 
@@ -107,6 +116,9 @@ export function processCache(
         passedServer: particle.passedServer,
         weight: particle.weight ?? 1,
       });
+    } else {
+      // All upstream components failed — response lost
+      ctx.state.simulation.droppedRequests += particle.weight ?? 1;
     }
   }
 }

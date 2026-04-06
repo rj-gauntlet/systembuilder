@@ -6,7 +6,7 @@ function r2(n: number): string {
   return n.toFixed(2);
 }
 
-const OVERLAY_WIDTH = 70;
+const OVERLAY_WIDTH = 85;
 const OVERLAY_HEIGHT = 36;
 
 const statStyle = new TextStyle({
@@ -39,7 +39,9 @@ export class StatOverlay {
     const stats = component.stats;
     const lines: string[] = [];
 
-    lines.push(`${r2(stats.requestsPerSecond)} req/s`);
+    const current = Math.round(stats.requestsPerSecond);
+    const max = Math.round(stats.throughputLimit);
+    lines.push(`${current}/${max} req/s`);
 
     if (stats.hitRate !== undefined) {
       lines.push(`hit: ${r2(stats.hitRate * 100)}%`);

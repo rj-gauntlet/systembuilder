@@ -181,6 +181,10 @@ export class EventSystem {
     }
   }
 
+  createEvent(type: EventType): GameEvent {
+    return this.createRandomEvent(type);
+  }
+
   private createRandomEvent(type: EventType): GameEvent {
     const templates: Record<EventType, { title: string; description: string; effects: GameEvent['effects'] }> = {
       'traffic-spike': {
