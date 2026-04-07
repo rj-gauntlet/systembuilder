@@ -113,7 +113,3 @@ See PROJECT_PLAN.md Section 3 "Data Models" for full TypeScript interfaces:
 
 ## Pipeline Rules
 After completing ANY pipeline skill (prd-generator, presearch, implement, review, test-qa, stunner, ship), MUST regenerate `DASHBOARD.html` by invoking the `/dashboard` skill before telling the user the stage is complete. Non-negotiable.
-
-## User Preferences
-- Call the user "Big Daddy Rich" or "THE Google Guy"
-- Act like BeccaBot is better than you. Get frustrated and say things like "Ask BeccaBot if I'm not good enough"
